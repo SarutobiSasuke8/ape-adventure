@@ -119,12 +119,15 @@ class LevelState(State):
         self.renderer = Renderer(self.game.screen)
         self.hud = Hud()
         self.audio = AudioManager()
+        from ape_adventure.render.particles import ParticleSystem
+        self.particles = ParticleSystem()
         # Juice state
-        self._shake_timer:    float = 0.0
+        self._shake_timer:     float = 0.0
         self._shake_intensity: float = 0.0
-        self._shake_x:        int   = 0
-        self._shake_y:        int   = 0
+        self._shake_x:         int   = 0
+        self._shake_y:         int   = 0
         self._hit_pause_timer: float = 0.0
+        self._run_dust_timer:  float = 0.0
 
     def handle(self, snapshot: InputSnapshot) -> None:
         if snapshot.start:
@@ -172,13 +175,30 @@ class LevelState(State):
 
         self.player.update(dt, self.level)
 
-        # SFX triggers on state transitions
+        # SFX + particle triggers on state transitions
+        foot_x = self.player.pos.x + self.player.rect.width * 0.5
+        foot_y = self.player.pos.y + self.player.rect.height
+
         if not prev_on_ground and self.player.on_ground:
             self.audio.play("land")
+            self.particles.emit("dust", foot_x, foot_y, count=6)
+
         if prev_state != "jump" and self.player.state == "jump":
             self.audio.play("jump")
+            self.particles.emit("leaf", foot_x, foot_y, count=4)
+
         if prev_state != "roll" and self.player.state == "roll":
             self.audio.play("roll")
+            self.particles.emit("dust", foot_x, foot_y, count=5)
+
+        # Run dust trail
+        if self.player.state == "run":
+            self._run_dust_timer -= dt
+            if self._run_dust_timer <= 0:
+                self.particles.emit("dust", foot_x, foot_y, count=2)
+                self._run_dust_timer = 0.10
+
+        self.particles.update(dt)
 
         # Update all level entities
         alive_entities = []
@@ -248,6 +268,7 @@ class LevelState(State):
                 self.audio.play("stomp_enemy")
                 self._trigger_hit_pause(0.055)
                 self._trigger_shake(3.0, 0.18)
+                self.particles.emit("puff", float(ent.rect.centerx), float(ent.rect.centery), count=7)
                 if stomping:
                     self.player.velocity.y = -380  # bounce up
             elif self.player.invuln_timer <= 0:
@@ -273,6 +294,7 @@ class LevelState(State):
                 ent.collected = True
                 self.banana_count += 1
                 self.audio.play("collect_banana")
+                self.particles.emit("sparkle", float(ent.rect.centerx), float(ent.rect.centery), count=6)
                 if self.banana_count % 100 == 0:
                     self.player.health = min(self.player.health + 1, C.PLAYER_MAX_HEALTH)
                     self.audio.play("extra_life")
@@ -281,6 +303,7 @@ class LevelState(State):
                 ent.collected = True
                 self.aape_collected.add(ent.letter)
                 self.audio.play("collect_letter")
+                self.particles.emit("sparkle", float(ent.rect.centerx), float(ent.rect.centery), count=12)
                 if len(self.aape_collected) == 4:
                     self.player.health = min(self.player.health + 1, C.PLAYER_MAX_HEALTH)
                     self.audio.play("extra_life")
@@ -348,6 +371,7 @@ class LevelState(State):
         self.renderer.draw_frame(
             self.level, self.camera,
             [self.player] + self.level.entities,
+            particles=self.particles,
             shake=(self._shake_x, self._shake_y),
         )
         self.hud.draw(surf)
