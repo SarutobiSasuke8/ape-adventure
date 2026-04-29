@@ -31,6 +31,9 @@ treat that as authoritative if there's any conflict.
   respawn → rescue → next level.
 - Flag anything that *might* impact frame rate (particle counts, per-frame
   surface allocations, large blits).
+- For meaningful sessions, follow the session-report flow in
+  [docs/SESSION_REPORTING.md](docs/SESSION_REPORTING.md). For the current
+  Ape Adventure package, [CLAUDE.md](CLAUDE.md) remains authoritative.
 
 ## Out of scope
 

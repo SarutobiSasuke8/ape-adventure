@@ -1,4 +1,4 @@
-# Architecture — Ape Adventure
+﻿# Architecture — Ape Adventure
 
 How the codebase is organized. The shape is chosen so that **vertical slice and full game share the same skeleton** — Stage 2 worlds drop into existing folders without restructuring.
 
@@ -7,9 +7,9 @@ How the codebase is organized. The shape is chosen so that **vertical slice and 
 ## Top-level layout
 
 ```
-ape_adventure/
+ape_escape/
 ├── __init__.py           # version, package metadata
-├── __main__.py           # entry: python -m ape_adventure
+├── __main__.py           # entry: python ape_escape.py
 ├── core/                 # game loop, state machine, camera, physics, input
 ├── entities/             # Player, enemies, collectibles, hazards
 ├── levels/               # Level loader, tilemap rendering, world data
@@ -187,6 +187,6 @@ No restructuring needed. That's the test of whether this architecture is right.
 - An entity-component system. Plain inheritance is enough at this scale.
 - A scripting layer. Levels are data + tile properties, not scripts.
 - A scene graph. The state machine + entity list is the scene.
-- A custom build system. `python -m ape_adventure` runs it; PyInstaller packages it.
+- A custom build system. `python ape_escape.py` runs it; PyInstaller packages it.
 
 If any of these become genuinely necessary, raise it as a question first.

@@ -1,4 +1,4 @@
-# Ape Adventure
+﻿# Ape Adventure
 
 > **Run. Roll. Rescue.**
 
@@ -6,8 +6,9 @@ A 90s-style jungle platformer where one ape takes on a Saurian invasion. Built i
 
 This repo contains:
 
-- **`ape_adventure/`** — the new game (in active development; vertical slice in progress)
-- **`ape_escape.py`** — the legacy v0 single-file arcade game (parked, still playable)
+- **`ape_escape.py`** — run this to launch the game
+- **`ape_escape/`** — the game package (multi-file, active development)
+- **`legacy_game.py`** — the original v0 single-file arcade prototype (parked)
 
 ---
 
@@ -15,7 +16,7 @@ This repo contains:
 
 ```bash
 pip install -r requirements.txt
-python -m ape_adventure
+python ape_escape.py
 ```
 
 Requires Python 3.10+.
@@ -43,7 +44,7 @@ For the full roadmap see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Legacy v0
 
-`ape_escape.py` is the original single-file arcade prototype — parked, not deleted. It still runs (`python ape_escape.py`) but is not under active development.
+`legacy_game.py` is the original single-file arcade prototype — parked, not deleted. It still runs (`python legacy_game.py`) but is not under active development.
 
 ---
 
@@ -51,7 +52,7 @@ For the full roadmap see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ```
 Ape Adventure/
-├── ape_adventure/         # NEW — multi-file pygame package
+├── ape_escape/         # NEW — multi-file pygame package
 │   ├── __main__.py
 │   ├── core/              # game loop, state machine, input, camera, physics
 │   ├── entities/          # player, enemies, collectibles, hazards
@@ -64,7 +65,8 @@ Ape Adventure/
 │   ├── ROADMAP.md         # vertical slice milestones + Stage 2 path
 │   └── ARCHITECTURE.md    # package structure, module responsibilities
 ├── marketing/             # brand, strategy, launch, channels playbooks
-├── ape_escape.py          # LEGACY v0 — single-file arcade game (parked)
+├── ape_escape.py          # ← RUN THIS to launch the game
+├── legacy_game.py         # LEGACY v0 — original single-file prototype (parked)
 ├── ape_escape_highscore.json
 ├── smoke_test.py          # legacy smoke test for v0
 ├── CLAUDE.md              # working agreement for AI collaborators
@@ -115,9 +117,9 @@ Gamepad support planned for the slice launch.
 If you're contributing (human or AI), read [CLAUDE.md](CLAUDE.md) first. Key points:
 
 - Multi-file package; modules have one responsibility
-- Sprite + tilemap based; assets live under `ape_adventure/assets/`
+- Sprite + tilemap based; assets live under `ape_escape/assets/`
 - Original IP only — no Nintendo / *DKC* trademarks
-- Don't break the legacy `ape_escape.py`
+- Don't break the legacy `legacy_game.py`
 
 ---
 

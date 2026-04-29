@@ -1,4 +1,4 @@
-# Roadmap — Ape Adventure
+﻿# Roadmap — Ape Adventure
 
 Two-stage roadmap. **Stage 1** is the vertical slice (~6–8 weeks). **Stage 2** is the optional path to a full *DKC*-style homage (~6–12 months) once Stage 1 ships and we know the core loop is fun.
 
@@ -9,12 +9,12 @@ Two-stage roadmap. **Stage 1** is the vertical slice (~6–8 weeks). **Stage 2**
 A complete, playable proof of feel. 1 world, 4 levels, 1 boss, 1 character.
 
 ### Phase 1.1 — Foundation (Week 1)
-- [ ] Scaffold `ape_adventure/` package per `docs/ARCHITECTURE.md`
+- [ ] Scaffold `ape_escape/` package per `docs/ARCHITECTURE.md`
 - [ ] Game loop: window, fixed-timestep, FPS clamp
 - [ ] State machine: TITLE → WORLD_MAP → LEVEL → PAUSE → RESULTS
 - [ ] Input layer: keyboard + gamepad-ready abstraction
 - [ ] Constants module + project config
-- [ ] `python -m ape_adventure` runs and shows a placeholder title screen
+- [ ] `python ape_escape.py` runs and shows a placeholder title screen
 
 ### Phase 1.2 — Player & Physics (Week 2)
 - [ ] Player class with walk/run/jump/coyote/jump-buffer
