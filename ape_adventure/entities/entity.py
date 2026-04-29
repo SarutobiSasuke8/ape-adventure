@@ -6,6 +6,7 @@ import pygame
 
 class Entity:
     def __init__(self, x: float, y: float, w: int, h: int) -> None:
+        self.pos = pygame.Vector2(x, y)
         self.rect = pygame.Rect(int(x), int(y), w, h)
         self.velocity = pygame.Vector2(0, 0)
         self.on_ground = False
