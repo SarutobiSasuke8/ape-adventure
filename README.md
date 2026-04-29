@@ -11,17 +11,7 @@ This repo contains:
 
 ---
 
-## Status
-
-**Vertical slice in progress.** Target: 1 world (Tangle Jungle), 4 levels, 1 boss, ~6–8 weeks of work. The package currently has the **scaffold and an architecture-shaped stub** — running it opens a placeholder title screen.
-
-For the full feature list of what's coming, see [docs/ROADMAP.md](docs/ROADMAP.md).
-
----
-
 ## Quick start
-
-### Run the new game (scaffold; placeholder title)
 
 ```bash
 pip install -r requirements.txt
@@ -30,11 +20,30 @@ python -m ape_adventure
 
 Requires Python 3.10+.
 
-### Run the legacy v0 game (fully playable arcade game)
+---
 
-```bash
-python ape_escape.py
-```
+## Status
+
+**Vertical slice in progress** — World 1 (Tangle Jungle). Playable end-to-end today:
+
+- ✅ Title screen → level → results screen flow
+- ✅ Player: walk, run, jump (coyote time + jump buffer), roll attack, 2 HP
+- ✅ Enemies: Snapper (patrol) + Hopper (hop AI)
+- ✅ Collectibles: bananas, AAPE letters, goal totem
+- ✅ Procedural jungle music loop + 9 SFX
+- ✅ Screen shake + hit-pause on all impacts
+- ✅ Save system (best time, bananas, AAPE per level)
+- ✅ Particles: dust, leaves, sparkles, puff
+- ✅ 3-layer parallax background, jungle tree silhouettes, hanging vines
+- 🔲 Slinger enemy, boss fight, Tiled level loader, world map
+
+For the full roadmap see [docs/ROADMAP.md](docs/ROADMAP.md).
+
+---
+
+## Legacy v0
+
+`ape_escape.py` is the original single-file arcade prototype — parked, not deleted. It still runs (`python ape_escape.py`) but is not under active development.
 
 ---
 

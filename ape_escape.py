@@ -1,4 +1,13 @@
 """
+╔══════════════════════════════════════════════════════════════════╗
+║  LEGACY v0 — APE ESCAPE  (archived, not under active development) ║
+║                                                                   ║
+║  This is the original single-file arcade prototype. It still      ║
+║  runs, but all new work happens in  ape_adventure/               ║
+║                                                                   ║
+║  To play the real game:   python -m ape_adventure                ║
+╚══════════════════════════════════════════════════════════════════╝
+
 APE ESCAPE
 A clean, modern 2D arcade platformer — single-file pygame, no external assets.
 Run: python ape_escape.py
