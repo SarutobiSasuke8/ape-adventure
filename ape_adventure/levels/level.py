@@ -21,6 +21,7 @@ class Level:
 def build_test_level() -> Level:
     """Hardcoded playground: ground floor, platforms, pits, enemies, collectibles."""
     from ape_adventure.entities.enemies.snapper import Snapper
+    from ape_adventure.entities.enemies.hopper import Hopper
     from ape_adventure.entities.collectibles.banana import Banana
     from ape_adventure.entities.collectibles.aape_letter import AapeLetter, LETTERS
     from ape_adventure.entities.collectibles.goal_totem import GoalTotem
@@ -119,6 +120,16 @@ def build_test_level() -> Level:
     for letter, lx, ly in aape_positions:
         entities.append(AapeLetter(lx, ly, letter))
     lvl.total_letters = len(aape_positions)
+
+    # --- Hoppers (introduced mid-level, harder to read than Snappers) ---
+    hopper_positions = [
+        (32 * TS,  16 * TS - 24),   # ground floor, section 2 — first encounter
+        (51 * TS,  12 * TS - 24),   # platform E (bridge over pit 2)
+        (63 * TS,   9 * TS - 24),   # platform F, highest point — tricky
+        (109 * TS, 13 * TS - 24),   # platform K, near the end
+    ]
+    for hx, hy in hopper_positions:
+        entities.append(Hopper(hx, hy))
 
     # --- Goal totem (end of level) ---
     totem_x = 119 * TS

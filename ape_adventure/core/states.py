@@ -175,6 +175,7 @@ class LevelState(State):
             self._trigger_death()
 
         # Camera
+        self.audio.poll_music()
         centre = pygame.Vector2(
             self.player.pos.x + self.player.rect.width * 0.5,
             self.player.pos.y + self.player.rect.height * 0.5,
@@ -185,11 +186,13 @@ class LevelState(State):
         self.hud.update(dt, self.banana_count, self.aape_collected, self.player.health)
 
     def _check_enemy_collisions(self) -> None:
-        from ape_adventure.entities.enemies.snapper import Snapper
+        from ape_adventure.entities.enemies.enemy import Enemy
 
         pr = self.player.rect
         for ent in self.level.entities:
-            if not isinstance(ent, Snapper) or ent._dying:
+            if not isinstance(ent, Enemy):
+                continue
+            if getattr(ent, "_dying", False):
                 continue
             if not pr.colliderect(ent.rect):
                 continue
@@ -215,7 +218,7 @@ class LevelState(State):
                 self.player.velocity.x = -kb_dir * 180
                 self.player.velocity.y = -250
                 if self.player.health <= 0:
-                    self._trigger_death()
+                    self._trigger_death(play_hurt_sound=False)
 
     def _check_collectible_collisions(self) -> None:
         from ape_adventure.entities.collectibles.banana import Banana
@@ -256,10 +259,17 @@ class LevelState(State):
                     }
                     self.game.change_state(ResultsState(self.game, results))
 
-    def _trigger_death(self) -> None:
+    def _trigger_death(self, play_hurt_sound: bool = True) -> None:
+        if self.player.dead:
+            return
         self.player.dead = True
-        self.player.health = max(0, self.player.health - 1)
-        self.audio.play("player_hurt")
+        self.player.health = 0
+        self.player.velocity = pygame.Vector2(0, 0)
+        self.player.rolling_timer = 0.0
+        self.player.jump_buffer_timer = 0.0
+        self.player.coyote_timer = 0.0
+        if play_hurt_sound:
+            self.audio.play("player_hurt")
         self.respawn_timer = 1.2
 
     def _respawn(self) -> None:
@@ -267,9 +277,16 @@ class LevelState(State):
         self.player.pos = pygame.Vector2(sp)
         self.player.rect.topleft = (int(sp.x), int(sp.y))
         self.player.velocity = pygame.Vector2(0, 0)
+        self.player.health = C.PLAYER_MAX_HEALTH
         self.player.on_ground = False
         self.player.dead = False
+        self.player.state = "idle"
+        self.player.rolling_timer = 0.0
+        self.player.jump_buffer_timer = 0.0
+        self.player.coyote_timer = 0.0
+        self.player.run_buildup = 0.0
         self.player.invuln_timer = 1.5
+        self.player.handle(InputSnapshot())
         self.camera.snap_to(pygame.Vector2(sp.x + 14, sp.y + 22))
 
     def draw(self, surf: pygame.Surface) -> None:
@@ -331,12 +348,6 @@ class ResultsState(State):
         r = self.results
         mins = int(r["time"]) // 60
         secs = int(r["time"]) % 60
-        lines = [
-            (f"Time:     {mins:02d}:{secs:02d}", (200, 230, 200)),
-            (f"Bananas:  {r['bananas']} / {r['total_bananas']}", (255, 220, 70)),
-            (f"AAPE:     {'COMPLETE!' if r['aape_complete'] else f'{len(r[chr(97)+chr(97)+chr(112)+chr(101)])} / 4'}", (250, 200, 60) if r["aape_complete"] else (160, 130, 60)),
-        ]
-        # fix the AAPE display key
         aape_display = "COMPLETE!" if r["aape_complete"] else f"{len(r['aape'])} / 4"
         lines = [
             (f"Time:     {mins:02d}:{secs:02d}", (200, 230, 200)),
