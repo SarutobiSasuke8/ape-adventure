@@ -7,6 +7,7 @@ import pygame
 from ape_adventure.core import constants as C
 from ape_adventure.core.input import Input
 from ape_adventure.core.states import TitleState, State
+from ape_adventure.data.save import SaveData
 
 
 class Game:
@@ -16,6 +17,7 @@ class Game:
         self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.input = Input()
+        self.save = SaveData()
         self.state: State = TitleState(self)
         self.next_state: State | None = None
         self.running = True

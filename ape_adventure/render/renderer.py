@@ -92,11 +92,29 @@ def draw_tiles(surf: pygame.Surface, level, camera) -> None:
 class Renderer:
     def __init__(self, screen: pygame.Surface) -> None:
         self.screen = screen
+        self._work: pygame.Surface = pygame.Surface(screen.get_size())
 
-    def draw_frame(self, level, camera, entities: list, particles=None) -> None:
-        draw_background(self.screen, camera.offset.x)
-        draw_tiles(self.screen, level, camera)
+    def draw_frame(
+        self,
+        level,
+        camera,
+        entities: list,
+        particles=None,
+        shake: tuple[int, int] = (0, 0),
+    ) -> None:
+        """Render one frame.  *shake* is a (dx, dy) pixel offset applied as
+        a camera jitter — the world is drawn to an off-screen surface and
+        blitted to the real screen with the offset so edges never show raw
+        background colour."""
+        target = self._work if (shake[0] or shake[1]) else self.screen
+
+        draw_background(target, camera.offset.x)
+        draw_tiles(target, level, camera)
         for ent in entities:
-            ent.draw(self.screen, camera)
+            ent.draw(target, camera)
         if particles is not None:
-            particles.draw(self.screen, camera)
+            particles.draw(target, camera)
+
+        if shake[0] or shake[1]:
+            self.screen.fill((0, 0, 0))
+            self.screen.blit(target, shake)

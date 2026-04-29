@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import random
 
 import pygame
 
@@ -118,6 +119,12 @@ class LevelState(State):
         self.renderer = Renderer(self.game.screen)
         self.hud = Hud()
         self.audio = AudioManager()
+        # Juice state
+        self._shake_timer:    float = 0.0
+        self._shake_intensity: float = 0.0
+        self._shake_x:        int   = 0
+        self._shake_y:        int   = 0
+        self._hit_pause_timer: float = 0.0
 
     def handle(self, snapshot: InputSnapshot) -> None:
         if snapshot.start:
@@ -132,6 +139,22 @@ class LevelState(State):
 
     def update(self, dt: float) -> None:
         if self._paused:
+            return
+
+        # --- Screen shake: update offset every frame regardless of pause/freeze ---
+        if self._shake_timer > 0:
+            self._shake_timer = max(0.0, self._shake_timer - dt)
+            fade = self._shake_timer / max(0.001, self._shake_timer + dt)  # decay
+            mag = int(self._shake_intensity * (0.3 + 0.7 * fade))
+            self._shake_x = random.randint(-mag, mag)
+            self._shake_y = random.randint(-mag, mag)
+        else:
+            self._shake_x = 0
+            self._shake_y = 0
+
+        # --- Hit-pause: freeze world updates for a short window ---
+        if self._hit_pause_timer > 0:
+            self._hit_pause_timer = max(0.0, self._hit_pause_timer - dt)
             return
 
         self.level_timer += dt
@@ -185,6 +208,22 @@ class LevelState(State):
         # HUD update
         self.hud.update(dt, self.banana_count, self.aape_collected, self.player.health)
 
+    # ------------------------------------------------------------------
+    # Juice helpers
+    # ------------------------------------------------------------------
+
+    def _trigger_shake(self, intensity: float, duration: float) -> None:
+        """Start (or strengthen) a screen-shake effect."""
+        if intensity >= self._shake_intensity or self._shake_timer <= 0:
+            self._shake_intensity = intensity
+            self._shake_timer = duration
+
+    def _trigger_hit_pause(self, duration: float = 0.055) -> None:
+        """Freeze game updates for *duration* seconds (a few frames)."""
+        self._hit_pause_timer = max(self._hit_pause_timer, duration)
+
+    # ------------------------------------------------------------------
+
     def _check_enemy_collisions(self) -> None:
         from ape_adventure.entities.enemies.enemy import Enemy
 
@@ -207,12 +246,16 @@ class LevelState(State):
             if stomping or rolling:
                 ent.die()
                 self.audio.play("stomp_enemy")
+                self._trigger_hit_pause(0.055)
+                self._trigger_shake(3.0, 0.18)
                 if stomping:
                     self.player.velocity.y = -380  # bounce up
             elif self.player.invuln_timer <= 0:
                 self.player.health -= 1
                 self.player.invuln_timer = C.PLAYER_INVULN_AFTER_HIT
                 self.audio.play("player_hurt")
+                self._trigger_hit_pause(0.07)
+                self._trigger_shake(5.0, 0.35)
                 # Knock back
                 kb_dir = 1 if self.player.pos.x < ent.rect.centerx else -1
                 self.player.velocity.x = -kb_dir * 180
@@ -250,12 +293,23 @@ class LevelState(State):
                 if self.player.rect.colliderect(ent.rect):
                     ent.touched = True
                     self.audio.play("goal_totem")
+                    # Persist the clear — get back "new record" flags
+                    rec_flags = self.game.save.record_clear(
+                        self.level.level_id,
+                        self.level_timer,
+                        self.banana_count,
+                        self.aape_collected,
+                    )
                     results = {
+                        "level_id": self.level.level_id,
                         "bananas": self.banana_count,
                         "total_bananas": self.level.total_bananas,
                         "aape": self.aape_collected,
                         "time": self.level_timer,
                         "aape_complete": len(self.aape_collected) == 4,
+                        "new_time": rec_flags["new_time"],
+                        "new_bananas": rec_flags["new_bananas"],
+                        "best_time": self.game.save.best_time(self.level.level_id),
                     }
                     self.game.change_state(ResultsState(self.game, results))
 
@@ -270,6 +324,7 @@ class LevelState(State):
         self.player.coyote_timer = 0.0
         if play_hurt_sound:
             self.audio.play("player_hurt")
+        self._trigger_shake(7.0, 0.50)
         self.respawn_timer = 1.2
 
     def _respawn(self) -> None:
@@ -290,7 +345,11 @@ class LevelState(State):
         self.camera.snap_to(pygame.Vector2(sp.x + 14, sp.y + 22))
 
     def draw(self, surf: pygame.Surface) -> None:
-        self.renderer.draw_frame(self.level, self.camera, [self.player] + self.level.entities)
+        self.renderer.draw_frame(
+            self.level, self.camera,
+            [self.player] + self.level.entities,
+            shake=(self._shake_x, self._shake_y),
+        )
         self.hud.draw(surf)
         if self._paused:
             self._draw_pause(surf)
@@ -350,14 +409,19 @@ class ResultsState(State):
         secs = int(r["time"]) % 60
         aape_display = "COMPLETE!" if r["aape_complete"] else f"{len(r['aape'])} / 4"
         lines = [
-            (f"Time:     {mins:02d}:{secs:02d}", (200, 230, 200)),
-            (f"Bananas:  {r['bananas']} / {r['total_bananas']}", (255, 220, 70)),
-            (f"AAPE:     {aape_display}", (250, 200, 60) if r["aape_complete"] else (160, 130, 60)),
+            (f"Time:     {mins:02d}:{secs:02d}", (200, 230, 200), r.get("new_time", False)),
+            (f"Bananas:  {r['bananas']} / {r['total_bananas']}", (255, 220, 70), r.get("new_bananas", False)),
+            (f"AAPE:     {aape_display}", (250, 200, 60) if r["aape_complete"] else (160, 130, 60), False),
         ]
 
-        for i, (line, col) in enumerate(lines):
+        font_nr = pygame.font.SysFont("arial", 16, bold=True)
+        for i, (line, col, is_new) in enumerate(lines):
             txt = self.font_med.render(line, True, col)
-            surf.blit(txt, txt.get_rect(center=(w // 2, 180 + i * 52)))
+            rect = txt.get_rect(center=(w // 2, 180 + i * 52))
+            surf.blit(txt, rect)
+            if is_new:
+                badge = font_nr.render("★ NEW BEST", True, (255, 230, 80))
+                surf.blit(badge, badge.get_rect(midleft=(rect.right + 12, rect.centery)))
 
         # AAPE letter display
         letter_chars = ("A", "A", "P", "E")
