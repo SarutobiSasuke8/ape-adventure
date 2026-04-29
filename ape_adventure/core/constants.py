@@ -1,0 +1,33 @@
+"""Tunable constants. Single source of truth for physics, screen, and timing values."""
+
+# --- Display ---
+SCREEN_WIDTH = 960
+SCREEN_HEIGHT = 540
+WINDOW_TITLE = "Ape Adventure"
+FPS = 60
+
+# --- World / tiles ---
+TILE_SIZE = 32
+GRAVITY = 1500.0
+TERMINAL_VELOCITY = 1000.0
+
+# --- Player (Bongo) ---
+PLAYER_WALK_SPEED = 140.0
+PLAYER_RUN_SPEED = 240.0
+PLAYER_JUMP_IMPULSE = -520.0
+PLAYER_VARIABLE_JUMP_FACTOR = 0.30
+PLAYER_COYOTE_TIME = 0.10
+PLAYER_JUMP_BUFFER = 0.12
+PLAYER_ROLL_SPEED = 320.0
+PLAYER_ROLL_DURATION = 0.4
+PLAYER_INVULN_AFTER_HIT = 1.2
+PLAYER_MAX_HEALTH = 2
+
+# --- Camera ---
+CAMERA_LOOKAHEAD = 80.0
+CAMERA_LERP = 6.0
+
+# --- Audio ---
+MUSIC_VOLUME = 0.6
+SFX_VOLUME = 0.85
+DUCK_FACTOR = 0.5
