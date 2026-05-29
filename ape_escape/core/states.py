@@ -104,14 +104,13 @@ class LevelState(State):
         self.level_timer = 0.0
 
     def enter(self) -> None:
-        from ape_escape.levels.level import build_test_level
         from ape_escape.entities.player import Player
         from ape_escape.core.camera import Camera
         from ape_escape.render.renderer import Renderer
         from ape_escape.render.hud import Hud
         from ape_escape.audio.audio import AudioManager
 
-        self.level = build_test_level()
+        self.level = self._load_level()
         sp = self.level.spawn_point
         self.player = Player(sp.x, sp.y)
         self.camera = Camera(self.level.bounds)
@@ -128,6 +127,25 @@ class LevelState(State):
         self._shake_y:         int   = 0
         self._hit_pause_timer: float = 0.0
         self._run_dust_timer:  float = 0.0
+
+    def _load_level(self):
+        """Load the first authored level from its .tmx, falling back to the
+        hardcoded test playground if the map is missing or fails to parse."""
+        from pathlib import Path
+
+        from ape_escape.levels.level import build_test_level
+        from ape_escape.levels.world_data import ALL_WORLDS
+
+        entry = ALL_WORLDS[0].levels[0]
+        levels_dir = Path(__file__).resolve().parent.parent / "levels"
+        tmx_path = levels_dir / entry.tmx_path
+        try:
+            from ape_escape.levels.tilemap import load_tmx
+
+            return load_tmx(tmx_path, level_id=entry.id, music_key=entry.music_key)
+        except Exception as exc:  # missing map, parse error, bad pytmx — stay playable
+            print(f"[level] could not load {tmx_path} ({exc}); using test playground")
+            return build_test_level()
 
     def handle(self, snapshot: InputSnapshot) -> None:
         if snapshot.start:

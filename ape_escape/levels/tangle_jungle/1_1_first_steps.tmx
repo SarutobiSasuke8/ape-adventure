@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="110" height="18" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="40">
+ <properties>
+  <property name="level_id" value="1-1"/>
+  <property name="name" value="First Steps"/>
+  <property name="music_key" value="tangle_jungle"/>
+ </properties>
+ <tileset firstgid="1" name="jungle" tilewidth="32" tileheight="32" tilecount="1" columns="1">
+  <image source="../../../ape_escape/assets/tilesets/jungle_placeholder.png" width="32" height="32"/>
+ </tileset>
+ <layer id="1" name="collision" width="110" height="18">
+  <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+  </data>
+ </layer>
+ <objectgroup id="2" name="entities">
+ <object id="1" type="spawn" x="112" y="512">
+  <properties>
+   <property name="kind" value="spawn"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="2" type="snapper" x="304" y="416">
+  <properties>
+   <property name="kind" value="snapper"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="3" type="snapper" x="912" y="416">
+  <properties>
+   <property name="kind" value="snapper"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="4" type="snapper" x="1520" y="384">
+  <properties>
+   <property name="kind" value="snapper"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="5" type="hopper" x="2960" y="384">
+  <properties>
+   <property name="kind" value="hopper"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="6" type="snapper" x="3216" y="512">
+  <properties>
+   <property name="kind" value="snapper"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="7" type="banana" x="160" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="8" type="banana" x="224" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="9" type="banana" x="288" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="10" type="banana" x="352" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="11" type="banana" x="224" y="384">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="12" type="banana" x="288" y="384">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="13" type="banana" x="352" y="384">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="14" type="banana" x="544" y="352">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="15" type="banana" x="608" y="352">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="16" type="banana" x="672" y="352">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="17" type="banana" x="1024" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="18" type="banana" x="1120" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="19" type="banana" x="1216" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="20" type="banana" x="1312" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="21" type="banana" x="1408" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="22" type="banana" x="1824" y="320">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="23" type="banana" x="1888" y="320">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="24" type="banana" x="1952" y="320">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="25" type="banana" x="2048" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="26" type="banana" x="2144" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="27" type="banana" x="2240" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="28" type="banana" x="2336" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="29" type="banana" x="2432" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="30" type="banana" x="3104" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="31" type="banana" x="3168" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="32" type="banana" x="3232" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="33" type="banana" x="3296" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="34" type="banana" x="3360" y="480">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="35" type="letter" x="592" y="352">
+  <properties>
+   <property name="kind" value="letter"/>
+   <property name="letter" value="A1"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="36" type="letter" x="1872" y="320">
+  <properties>
+   <property name="kind" value="letter"/>
+   <property name="letter" value="A2"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="37" type="letter" x="1136" y="384">
+  <properties>
+   <property name="kind" value="letter"/>
+   <property name="letter" value="P"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="38" type="letter" x="2608" y="384">
+  <properties>
+   <property name="kind" value="letter"/>
+   <property name="letter" value="E"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="39" type="goal_totem" x="3408" y="512">
+  <properties>
+   <property name="kind" value="goal_totem"/>
+  </properties>
+  <point/>
+ </object>
+ </objectgroup>
+</map>
