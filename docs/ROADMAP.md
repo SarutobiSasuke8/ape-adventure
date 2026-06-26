@@ -25,10 +25,10 @@ A complete, playable proof of feel. 1 world, 4 levels, 1 boss, 1 character.
 - [ ] Test level: a flat playground with platforms
 
 ### Phase 1.3 — Levels & Collectibles (Week 3)
-- [ ] `pytmx` loader integration; load `world1_1.tmx`
-- [ ] Goal totem (level end)
-- [ ] Bananas, AAPE letters, banana bunches, bonus barrels
-- [ ] Results screen with collection summary
+- [x] `pytmx` loader integration; load Tangle Jungle 1-1 (`tangle_jungle/1_1_first_steps.tmx`)
+- [x] Goal totem (level end)
+- [x] Bananas, AAPE letters, banana bunches, bonus barrels
+- [x] Results screen with collection summary
 - [ ] World map screen with level select (locked/unlocked)
 - [ ] Persisted save (auto-save on level clear)
 
