@@ -23,6 +23,20 @@ Requires Python 3.10+.
 
 ---
 
+## Local verify
+
+With Python 3.10+ and the requirements installed, run the active package smoke test first. The second command checks the parked v0 prototype. Both scripts set dummy SDL video and audio drivers, so they run headlessly.
+
+```bash
+pip install -r requirements.txt
+python smoke_test_adventure.py
+python smoke_test.py
+```
+
+The active-package smoke passes locally. The legacy smoke currently fails because its `import ape_escape` resolves to the active package, which has no `WIDTH` constant. It remains listed for legacy maintenance; it is not a passing gate.
+
+---
+
 ## Status
 
 **Vertical slice in progress** — World 1 (Tangle Jungle). Playable end-to-end today:
