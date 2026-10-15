@@ -17,6 +17,7 @@ class Hud:
         self._font = pygame.font.SysFont("arial", 20, bold=True)
         self._small = pygame.font.SysFont("arial", 15)
         self._t = 0.0
+        self.reduced_motion = False
 
     def update(self, dt: float, bananas: int, letters: set[str], health: int) -> None:
         self.bananas = bananas
@@ -56,7 +57,7 @@ class Hud:
             txt_col = (40, 20, 8) if collected else (100, 80, 40)
             # Diamond
             cx_, cy_ = lx + 12, 20
-            pulse = int(4 * math.sin(self._t * 3 + lx)) if collected else 0
+            pulse = int(4 * math.sin(self._t * 3 + lx)) if collected and not self.reduced_motion else 0
             pts = [(cx_, cy_ - 12 - pulse), (cx_ + 12 + pulse, cy_),
                    (cx_, cy_ + 12 + pulse), (cx_ - 12 - pulse, cy_)]
             pygame.draw.polygon(surf, bg_col, pts)
@@ -66,5 +67,5 @@ class Hud:
             lx += 32
 
         # --- Pause hint (bottom-right, fades after 5s) ---
-        hint = self._small.render("P — pause  |  Esc — title", True, (150, 190, 130))
+        hint = self._small.render("Esc / P: pause", True, (150, 190, 130))
         surf.blit(hint, (w - hint.get_width() - 8, C.SCREEN_HEIGHT - 24))

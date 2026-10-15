@@ -20,6 +20,81 @@ class State:
     def update(self, dt: float) -> None: ...
     def draw(self, surf: pygame.Surface) -> None: ...
 
+    @property
+    def settings(self):
+        """The game's Settings, or in-memory defaults for harnesses without one."""
+        s = getattr(self.game, "settings", None)
+        if s is None:
+            from ape_escape.data.settings import Settings
+
+            s = Settings()
+            self.game.settings = s
+        return s
+
+    @property
+    def reduced_motion(self) -> bool:
+        return bool(self.settings.reduced_motion)
+
+
+class GameplayState(State):
+    """Base for every playable scene. Esc / P opens the pause menu.
+
+    Subclasses call ``handle_pause`` first in ``handle`` and skip their own
+    input and ``update`` while ``paused`` is True, then call ``draw_pause``
+    at the end of ``draw``. They implement ``restart`` and may override
+    ``on_pause_changed`` / ``on_settings_changed``.
+    """
+
+    def __init__(self, game) -> None:
+        super().__init__(game)
+        self.paused = False
+        self._pause_menu = None
+
+    @property
+    def pause_menu(self):
+        if self._pause_menu is None:
+            from ape_escape.core.pause import PauseMenu
+
+            self._pause_menu = PauseMenu(self.settings)
+        return self._pause_menu
+
+    def set_paused(self, paused: bool) -> None:
+        if paused == self.paused:
+            return
+        self.paused = paused
+        if paused:
+            self.pause_menu.reset()
+        self.on_pause_changed(paused)
+
+    def handle_pause(self, snapshot: InputSnapshot) -> bool:
+        """Route input to the pause menu. Returns True if the frame was consumed."""
+        from ape_escape.core import pause as PM
+
+        if not self.paused:
+            if snapshot.pause:
+                self.set_paused(True)
+                return True
+            return False
+
+        action = self.pause_menu.handle(snapshot)
+        if action == PM.RESUME:
+            self.set_paused(False)
+        elif action == PM.RESTART:
+            self.restart()
+        elif action == PM.QUIT_TO_TITLE:
+            self.game.change_state(TitleState(self.game))
+        elif action == PM.SETTINGS_CHANGED:
+            self.on_settings_changed()
+        return True
+
+    def draw_pause(self, surf: pygame.Surface) -> None:
+        if self.paused:
+            self.pause_menu.draw(surf)
+
+    def restart(self) -> None: ...
+    def on_pause_changed(self, paused: bool) -> None: ...
+    def on_settings_changed(self) -> None: ...
+
 
 # ---------------------------------------------------------------------------
 # Title
@@ -52,16 +127,18 @@ class TitleState(State):
                 int(38 * (1 - t) + 22 * t),
             ), (0, y), (w, y))
 
-        # Animated vine
+        # Animated vine (held still under reduced motion)
+        still = self.reduced_motion
+        sway = 0.0 if still else 6.0
         vx = w // 2
         for i in range(8):
-            vy = 80 + i * 28 + int(math.sin(self.t * 1.8 + i * 0.5) * 6)
-            prev_vy = 80 + (i - 1) * 28 + int(math.sin(self.t * 1.8 + (i - 1) * 0.5) * 6)
+            vy = 80 + i * 28 + int(math.sin(self.t * 1.8 + i * 0.5) * sway)
+            prev_vy = 80 + (i - 1) * 28 + int(math.sin(self.t * 1.8 + (i - 1) * 0.5) * sway)
             if i > 0:
                 pygame.draw.line(surf, (50, 100, 30), (vx, prev_vy), (vx, vy), 3)
             pygame.draw.circle(surf, (60, 130, 40), (vx, vy), 4)
 
-        bob = int(math.sin(self.t * 2.0) * 4)
+        bob = 0 if still else int(math.sin(self.t * 2.0) * 4)
         title = self.font_big.render("APE ADVENTURE", True, (250, 210, 90))
         shadow = self.font_big.render("APE ADVENTURE", True, (50, 25, 8))
         tr = title.get_rect(center=(w // 2, h // 2 - 60 + bob))
@@ -71,13 +148,14 @@ class TitleState(State):
         sub = self.font_med.render("Tangle Jungle — Vertical Slice", True, (180, 230, 150))
         surf.blit(sub, sub.get_rect(center=(w // 2, tr.bottom + 18)))
 
-        if int(self.t * 2) % 2 == 0:
+        if still or int(self.t * 2) % 2 == 0:
             prompt = self.font_small.render("Press ENTER or SPACE to play", True, (220, 220, 180))
             surf.blit(prompt, prompt.get_rect(center=(w // 2, h // 2 + 80)))
 
         hints = [
             "Arrows / WASD — Move    Space / Z — Jump (hold for higher)",
             "Shift — Run    X — Roll attack",
+            "Esc or P in a level: pause menu and settings",
         ]
         for i, hint in enumerate(hints):
             txt = self.font_small.render(hint, True, (140, 180, 120))
@@ -88,7 +166,7 @@ class TitleState(State):
 # Level
 # ---------------------------------------------------------------------------
 
-class LevelState(State):
+class LevelState(GameplayState):
     def __init__(self, game) -> None:
         super().__init__(game)
         self.level = None
@@ -98,7 +176,6 @@ class LevelState(State):
         self.hud = None
         self.audio = None
         self.respawn_timer = 0.0
-        self._paused = False
         self.banana_count = 0
         self.aape_collected: set[str] = set()
         self.level_timer = 0.0
@@ -118,6 +195,7 @@ class LevelState(State):
         self.renderer = Renderer(self.game.screen)
         self.hud = Hud()
         self.audio = AudioManager()
+        self.on_settings_changed()
         from ape_escape.render.particles import ParticleSystem
         self.particles = ParticleSystem()
         # Juice state
@@ -147,19 +225,42 @@ class LevelState(State):
             print(f"[level] could not load {tmx_path} ({exc}); using test playground")
             return build_test_level()
 
+    def exit(self) -> None:
+        if self.audio:
+            self.audio.stop_music()
+
+    # --- Pause menu hooks -------------------------------------------------
+
+    def restart(self) -> None:
+        self.game.change_state(LevelState(self.game))
+
+    def on_pause_changed(self, paused: bool) -> None:
+        if self.audio:
+            self.audio.set_ducked(paused)
+        if not paused and self.player:
+            # Drop any input held when the menu opened.
+            self.player.handle(InputSnapshot())
+
+    def on_settings_changed(self) -> None:
+        s = self.settings
+        if self.audio:
+            self.audio.set_volumes(s.music_volume, s.sfx_volume)
+        if self.hud:
+            self.hud.reduced_motion = s.reduced_motion
+        if s.reduced_motion:
+            self._shake_timer = 0.0
+            self._shake_x = self._shake_y = 0
+
+    # ----------------------------------------------------------------------
+
     def handle(self, snapshot: InputSnapshot) -> None:
-        if snapshot.start:
-            self._paused = not self._paused
-        if snapshot.quit:
-            self.game.change_state(TitleState(self.game))
+        if self.handle_pause(snapshot):
             return
-        if not self._paused and self.player and not self.player.dead:
-            prev_on_ground = self.player.on_ground
-            prev_state = self.player.state
+        if self.player and not self.player.dead:
             self.player.handle(snapshot)
 
     def update(self, dt: float) -> None:
-        if self._paused:
+        if self.paused:
             return
 
         # --- Screen shake: update offset every frame regardless of pause/freeze ---
@@ -251,7 +352,9 @@ class LevelState(State):
     # ------------------------------------------------------------------
 
     def _trigger_shake(self, intensity: float, duration: float) -> None:
-        """Start (or strengthen) a screen-shake effect."""
+        """Start (or strengthen) a screen-shake effect. Off under reduced motion."""
+        if self.reduced_motion:
+            return
         if intensity >= self._shake_intensity or self._shake_timer <= 0:
             self._shake_intensity = intensity
             self._shake_timer = duration
@@ -393,21 +496,7 @@ class LevelState(State):
             shake=(self._shake_x, self._shake_y),
         )
         self.hud.draw(surf)
-        if self._paused:
-            self._draw_pause(surf)
-
-    def _draw_pause(self, surf: pygame.Surface) -> None:
-        ov = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        ov.fill((0, 0, 0, 150))
-        surf.blit(ov, (0, 0))
-        font = pygame.font.SysFont("arial", 52, bold=True)
-        txt = font.render("PAUSED", True, (250, 210, 90))
-        surf.blit(txt, txt.get_rect(center=(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2)))
-        small = pygame.font.SysFont("arial", 22)
-        surf.blit(small.render("P — resume  |  Esc — title", True, (200, 230, 180)),
-                  pygame.Rect(0, 0, C.SCREEN_WIDTH, C.SCREEN_HEIGHT).move(
-                      C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2 + 54
-                  ).topleft)
+        self.draw_pause(surf)
 
 
 # ---------------------------------------------------------------------------
@@ -442,7 +531,8 @@ class ResultsState(State):
             ), (0, y), (w, y))
 
         # Title
-        bob = int(math.sin(self.t * 2.0) * 3)
+        still = self.reduced_motion
+        bob = 0 if still else int(math.sin(self.t * 2.0) * 3)
         title = self.font_big.render("LEVEL CLEAR!", True, (250, 210, 90))
         surf.blit(title, title.get_rect(center=(w // 2, 80 + bob)))
 
@@ -479,7 +569,7 @@ class ResultsState(State):
             surf.blit(lbl, lbl.get_rect(center=(lx + 20, 356)))
             lx += 44
 
-        if int(self.t * 2) % 2 == 0:
+        if still or int(self.t * 2) % 2 == 0:
             prompt = self.font_small.render("Press ENTER to return to title", True, (180, 220, 160))
             surf.blit(prompt, prompt.get_rect(center=(w // 2, h - 60)))
 
@@ -493,4 +583,5 @@ class WorldMapState(State):
 
 
 class PauseState(State):
-    """Dedicated pause overlay — Phase 1.1 polish."""
+    """Unused placeholder. The pause menu is an overlay owned by GameplayState
+    (see core/pause.py), so gameplay keeps its world state while paused."""
