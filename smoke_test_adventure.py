@@ -4,10 +4,14 @@ Two phases:
 
 1. Boot: construct the real ``Game`` (window, input, save, settings, title
    state), press Enter on the title screen and step the real frame loop into
-   Tangle Jungle 1-1. Settings are redirected to a temp dir so nothing is
-   written to the user's data folder.
-2. Level: drive ``LevelState`` through movement, a death and respawn, and the
-   goal totem into the results screen.
+   Tangle Jungle 1-1, then quit through ``Game.run`` straight away, while the
+   music loop is still building. Settings are redirected to a temp dir so
+   nothing is written to the user's data folder.
+2. Level: in a fresh pygame session (quit + init after phase 1), drive
+   ``LevelState`` through movement, a death and respawn, and the goal totem
+   into the results screen.
+
+Both phases render an AAPE letter, so a font cached across sessions fails here.
 
 Run with ``python smoke_test_adventure.py``. Exits non-zero on failure.
 """
@@ -16,6 +20,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+import threading
 from pathlib import Path
 from unittest import mock
 
@@ -64,16 +69,20 @@ def run_frames(state: LevelState, screen: pygame.Surface, snapshots: list[InputS
         state.draw(screen)
 
 
-def wait_for_audio(state) -> None:
-    """Let the off-thread music build finish before pygame.quit().
+def draw_letter(state: LevelState, screen: pygame.Surface) -> None:
+    """Render one AAPE letter directly, whether or not it is on camera.
 
-    AudioManager generates the music loop on a daemon thread; quitting the
-    mixer underneath it crashes the interpreter.
+    The letter's font must belong to the current pygame session; a font kept
+    from an earlier session crashes after quit + init.
     """
-    audio = getattr(state, "audio", None)
-    ready = getattr(audio, "_music_ready", None)
-    if ready is not None:
-        assert ready.wait(timeout=60), "music loop did not finish building"
+    from ape_escape.entities.collectibles.aape_letter import AapeLetter
+
+    letter = next(e for e in state.level.entities if isinstance(e, AapeLetter))
+    letter.draw(screen, state.camera)
+
+
+def background_threads() -> list[threading.Thread]:
+    return [t for t in threading.enumerate() if t is not threading.main_thread()]
 
 
 def step_real_game(game, events: list[pygame.event.Event] | None = None) -> None:
@@ -108,29 +117,44 @@ def boot_real_game() -> None:
             enter = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)
             step_real_game(game, [enter])
             assert isinstance(game.next_state, LevelState), "Enter on title did not start a level"
-            for _ in range(60):
+            for _ in range(5):
                 step_real_game(game)
             assert isinstance(game.state, LevelState), type(game.state).__name__
             assert game.state.level is not None and game.state.level.level_id == "1-1"
             assert game.running
+            draw_letter(game.state, game.screen)
             assert not any(Path(tmp).iterdir()), "boot wrote to the user data dir"
-        finally:
-            # No pygame.quit() here: some modules cache Font objects at module
-            # level, and those crash if reused after a quit/init cycle. main()
-            # quits once at the end.
-            wait_for_audio(game.state)
-    print("Ape Adventure boot OK")
+
+            # Quit early, through the real loop, while the music loop is
+            # still being generated on its background thread.
+            assert not game.state.audio._music_ready.is_set(), "music finished too soon to test an early quit"
+            pygame.event.post(pygame.event.Event(pygame.QUIT))
+            try:
+                game.run()
+            except SystemExit as exc:
+                assert exc.code == 0, exc.code
+            else:
+                raise AssertionError("Game.run() returned without sys.exit")
+            assert not pygame.get_init(), "Game.run() did not quit pygame"
+            leftover = background_threads()
+            assert not leftover, f"threads still running after quit: {leftover}"
+        except BaseException:
+            pygame.quit()
+            raise
+    print("Ape Adventure boot + early quit OK")
 
 
 def main() -> int:
     boot_real_game()
 
+    # Second pygame session: restart after the quit above.
     pygame.init()
     game = FakeGame()
     state = LevelState(game)
     state.enter()
 
     try:
+        draw_letter(state, game.screen)
         assert state.player is not None
         assert state.level is not None
         assert state.player.health == C.PLAYER_MAX_HEALTH
@@ -169,7 +193,7 @@ def main() -> int:
         print("Ape Adventure smoke test OK")
         return 0
     finally:
-        wait_for_audio(state)
+        state.exit()
         pygame.quit()
 
 

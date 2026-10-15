@@ -227,7 +227,7 @@ class LevelState(GameplayState):
 
     def exit(self) -> None:
         if self.audio:
-            self.audio.stop_music()
+            self.audio.shutdown()
 
     # --- Pause menu hooks -------------------------------------------------
 

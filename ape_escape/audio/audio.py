@@ -68,12 +68,12 @@ def _gen_chord(
     return pygame.mixer.Sound(buffer=bytes(buf))
 
 
-def _gen_music_loop() -> pygame.mixer.Sound:
+def _gen_music_loop(cancel: threading.Event | None = None) -> pygame.mixer.Sound | None:
     """Procedural jungle theme — F pentatonic, 110 BPM, 2-bar loop (~4.4s).
 
     Three voices: bass (square), melody (sine), rhythm (noise bursts).
     Single-pass renderer keeps RAM linear and avoids repeated full-buffer
-    passes over the same samples.
+    passes over the same samples. Returns None if ``cancel`` is set first.
     """
     BPM   = 110
     BEAT  = 60.0 / BPM
@@ -127,6 +127,8 @@ def _gen_music_loop() -> pygame.mixer.Sound:
     si      = 0
 
     for i in range(N):
+        if cancel is not None and i % 4096 == 0 and cancel.is_set():
+            return None
         # Activate notes whose start sample has arrived
         while si < len(sched) and sched[si][0] <= i:
             active.append(sched[si])
@@ -158,6 +160,8 @@ def _gen_music_loop() -> pygame.mixer.Sound:
         val    = max(-32768, min(32767, int(sample * 32767)))
         struct.pack_into("<h", buf, i * 2, val)
 
+    if cancel is not None and cancel.is_set():
+        return None
     return pygame.mixer.Sound(buffer=bytes(buf))
 
 
@@ -174,15 +178,25 @@ class AudioManager:
         self._ducked = False
         self._build_sfx()
         # Generate the music loop off-thread so game startup isn't blocked.
-        threading.Thread(target=self._build_music, daemon=True).start()
+        self._cancel = threading.Event()
+        self._music_thread = threading.Thread(target=self._build_music, daemon=True)
+        self._music_thread.start()
 
     # ------------------------------------------------------------------
     # Internal builders
     # ------------------------------------------------------------------
 
     def _build_music(self) -> None:
-        self._music = _gen_music_loop()
-        self._music_ready.set()
+        music = _gen_music_loop(self._cancel)
+        if music is not None:
+            self._music = music
+            self._music_ready.set()
+
+    def shutdown(self) -> None:
+        """Stop music and the music build thread. Call before pygame.quit()."""
+        self.stop_music()
+        self._cancel.set()
+        self._music_thread.join()
 
     def _build_sfx(self) -> None:
         s = self._sfx
