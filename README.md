@@ -25,16 +25,23 @@ Requires Python 3.10+.
 
 ## Local verify
 
-With Python 3.10+ and the requirements installed, run the active package smoke test first. The second command checks the parked v0 prototype. Both scripts set dummy SDL video and audio drivers, so they run headlessly.
+Smoke test, one command (Python 3.10+, after `pip install -r requirements.txt`):
 
 ```bash
-pip install -r requirements.txt
 python smoke_test_adventure.py
-python -m unittest discover -s tests -t .
-python smoke_test.py
 ```
 
-The active-package smoke passes locally. The legacy smoke currently fails because its `import ape_escape` resolves to the active package, which has no `WIDTH` constant. It remains listed for legacy maintenance; it is not a passing gate.
+It runs headlessly (dummy SDL video and audio drivers). It boots the real `Game`, presses Enter on the title screen and steps the frame loop into Tangle Jungle 1-1, then drives the level through movement, a death and respawn, and the goal totem into the results screen. It prints `Ape Adventure boot OK` and `Ape Adventure smoke test OK` and exits non-zero on any failure. Settings are redirected to a temp folder, so it does not touch your saved settings.
+
+Unit tests:
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the compile check, the unit tests and the smoke test on Python 3.10 and 3.12 for every pull request and every push to `master`. It has no deploy step.
+
+The parked v0 prototype has its own `python smoke_test.py`. It currently fails because its `import ape_escape` resolves to the active package, which has no `WIDTH` constant, so it is not part of CI.
 
 ---
 
