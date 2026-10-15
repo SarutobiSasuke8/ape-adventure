@@ -169,6 +169,9 @@ class AudioManager:
         self._music: pygame.mixer.Sound | None = None
         self._music_channel: pygame.mixer.Channel | None = None
         self._music_ready = threading.Event()
+        self.music_volume = C.MUSIC_VOLUME
+        self.sfx_volume = C.SFX_VOLUME
+        self._ducked = False
         self._build_sfx()
         # Generate the music loop off-thread so game startup isn't blocked.
         threading.Thread(target=self._build_music, daemon=True).start()
@@ -197,10 +200,26 @@ class AudioManager:
     # Public API
     # ------------------------------------------------------------------
 
+    def set_volumes(self, music: float, sfx: float) -> None:
+        """Apply user volumes (0.0-1.0). Takes effect on the playing music at once."""
+        self.music_volume = max(0.0, min(1.0, music))
+        self.sfx_volume = max(0.0, min(1.0, sfx))
+        self._apply_music_volume()
+
+    def set_ducked(self, ducked: bool) -> None:
+        """Lower the music under the pause menu (C.DUCK_FACTOR)."""
+        self._ducked = ducked
+        self._apply_music_volume()
+
+    def _apply_music_volume(self) -> None:
+        if self._music_channel:
+            factor = C.DUCK_FACTOR if self._ducked else 1.0
+            self._music_channel.set_volume(self.music_volume * factor)
+
     def play(self, key: str) -> None:
         snd = self._sfx.get(key)
-        if snd:
-            snd.set_volume(C.SFX_VOLUME)
+        if snd and self.sfx_volume > 0:
+            snd.set_volume(self.sfx_volume)
             snd.play()
 
     def poll_music(self) -> None:
@@ -213,8 +232,7 @@ class AudioManager:
         if not self._music_ready.is_set():
             return
         self._music_channel = self._music.play(loops=-1)  # type: ignore[union-attr]
-        if self._music_channel:
-            self._music_channel.set_volume(C.MUSIC_VOLUME)
+        self._apply_music_volume()
 
     def stop_music(self) -> None:
         if self._music_channel:

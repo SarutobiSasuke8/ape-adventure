@@ -30,6 +30,7 @@ With Python 3.10+ and the requirements installed, run the active package smoke t
 ```bash
 pip install -r requirements.txt
 python smoke_test_adventure.py
+python -m unittest discover -s tests -t .
 python smoke_test.py
 ```
 
@@ -108,8 +109,12 @@ For the design treatment, see [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
 | Jump (variable height) | `Space` or `Z` |
 | Run | Hold `Shift` |
 | Roll attack | `X` or `Shift`-tap |
-| Pause / Confirm | `Enter` / `P` |
-| Back / Quit | `Esc` |
+| Start / Confirm | `Enter` |
+| Pause menu (in a level) | `Esc` or `P` |
+| Menu navigation | Arrows or `W` / `A` / `S` / `D`, `Enter` or `Space` to select |
+| Quit (title screen) | `Esc` |
+
+The pause menu offers Resume, Restart, Settings and Quit to title. Settings (music volume, SFX volume, reduced motion) are saved to `settings.json` in the per-user data folder: `%APPDATA%\ApeAdventure` on Windows, `~/Library/Application Support/ApeAdventure` on macOS, `$XDG_DATA_HOME/ApeAdventure` (default `~/.local/share/ApeAdventure`) on Linux. Reduced motion turns off screen shake and the title, results and HUD bobbing and blinking.
 
 Gamepad support planned for the slice launch.
 

@@ -30,7 +30,8 @@ The shape mirrors the data flow: **Input → Core → Entities/Levels → Render
 | Module | Responsibility |
 |---|---|
 | `game.py` | Top-level `Game` class. Owns the state machine, the main loop, the active state |
-| `states.py` | State classes: `TitleState`, `WorldMapState`, `LevelState`, `PauseState`, `ResultsState` |
+| `states.py` | State classes: `TitleState`, `GameplayState` (base for playable scenes, owns the pause menu), `LevelState`, `ResultsState`; `WorldMapState` and `PauseState` are placeholders |
+| `pause.py` | Pause menu overlay: Resume, Restart, Settings, Quit to title, plus the settings page |
 | `input.py` | Read raw pygame events → publish a structured `InputSnapshot` per frame |
 | `camera.py` | Smooth-follow camera with look-ahead and clamping to level bounds |
 | `physics.py` | Axis-separated AABB collision against tile grid; gravity helpers |
@@ -107,7 +108,7 @@ Text-only; user-writable.
 ```
 data/
 ├── save.json        # auto-save: progress, last level, AAPE collection
-└── settings.json    # volume, key bindings, fullscreen
+└── settings.json    # music + SFX volume, reduced motion (data/settings.py); key bindings, fullscreen later
 ```
 
 `data/` lives next to the package on first launch but **resolves to a user data dir** (`%APPDATA%/ApeAdventure` on Windows, `~/.local/share/ApeAdventure` on Linux, `~/Library/Application Support/ApeAdventure` on macOS) via a tiny helper in `core/paths.py`. Devs editing in-tree get a local fallback.

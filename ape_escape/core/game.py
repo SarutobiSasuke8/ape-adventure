@@ -8,6 +8,7 @@ from ape_escape.core import constants as C
 from ape_escape.core.input import Input
 from ape_escape.core.states import TitleState, State
 from ape_escape.data.save import SaveData
+from ape_escape.data.settings import Settings
 
 
 def _make_icon() -> pygame.Surface:
@@ -63,6 +64,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.input = Input()
         self.save = SaveData()
+        self.settings = Settings.load()
         self.state: State = TitleState(self)
         self.next_state: State | None = None
         self.running = True
