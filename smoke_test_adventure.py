@@ -1,8 +1,23 @@
-﻿"""Headless smoke test for the Ape Adventure package."""
+﻿"""Headless smoke test for the Ape Adventure package.
+
+Two phases:
+
+1. Boot: construct the real ``Game`` (window, input, save, settings, title
+   state), press Enter on the title screen and step the real frame loop into
+   Tangle Jungle 1-1. Settings are redirected to a temp dir so nothing is
+   written to the user's data folder.
+2. Level: drive ``LevelState`` through movement, a death and respawn, and the
+   goal totem into the results screen.
+
+Run with ``python smoke_test_adventure.py``. Exits non-zero on failure.
+"""
 from __future__ import annotations
 
 import os
 import sys
+import tempfile
+from pathlib import Path
+from unittest import mock
 
 os.environ["SDL_AUDIODRIVER"] = "dummy"
 os.environ["SDL_VIDEODRIVER"] = "dummy"
@@ -11,7 +26,7 @@ import pygame
 
 from ape_escape.core import constants as C
 from ape_escape.core.input import InputSnapshot
-from ape_escape.core.states import LevelState, ResultsState
+from ape_escape.core.states import LevelState, ResultsState, TitleState
 
 
 class _MemorySave:
@@ -49,7 +64,67 @@ def run_frames(state: LevelState, screen: pygame.Surface, snapshots: list[InputS
         state.draw(screen)
 
 
+def wait_for_audio(state) -> None:
+    """Let the off-thread music build finish before pygame.quit().
+
+    AudioManager generates the music loop on a daemon thread; quitting the
+    mixer underneath it crashes the interpreter.
+    """
+    audio = getattr(state, "audio", None)
+    ready = getattr(audio, "_music_ready", None)
+    if ready is not None:
+        assert ready.wait(timeout=60), "music loop did not finish building"
+
+
+def step_real_game(game, events: list[pygame.event.Event] | None = None) -> None:
+    """One iteration of ``Game.run`` without the clock, flip-loop or sys.exit."""
+    if game.next_state is not None:
+        game.state.exit()
+        game.state = game.next_state
+        game.next_state = None
+        game.state.enter()
+    pygame.event.pump()
+    snapshot = game.input.poll(events or [])
+    game.state.handle(snapshot)
+    game.state.update(1 / C.FPS)
+    game.state.draw(game.screen)
+    pygame.display.flip()
+
+
+def boot_real_game() -> None:
+    from ape_escape.core.game import Game
+
+    with tempfile.TemporaryDirectory() as tmp, mock.patch(
+        "ape_escape.core.paths.user_data_dir", return_value=Path(tmp)
+    ):
+        game = Game()
+        try:
+            assert isinstance(game.state, TitleState), type(game.state).__name__
+            assert game.screen.get_size() == (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            for _ in range(30):
+                step_real_game(game)
+            assert isinstance(game.state, TitleState)
+
+            enter = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)
+            step_real_game(game, [enter])
+            assert isinstance(game.next_state, LevelState), "Enter on title did not start a level"
+            for _ in range(60):
+                step_real_game(game)
+            assert isinstance(game.state, LevelState), type(game.state).__name__
+            assert game.state.level is not None and game.state.level.level_id == "1-1"
+            assert game.running
+            assert not any(Path(tmp).iterdir()), "boot wrote to the user data dir"
+        finally:
+            # No pygame.quit() here: some modules cache Font objects at module
+            # level, and those crash if reused after a quit/init cycle. main()
+            # quits once at the end.
+            wait_for_audio(game.state)
+    print("Ape Adventure boot OK")
+
+
 def main() -> int:
+    boot_real_game()
+
     pygame.init()
     game = FakeGame()
     state = LevelState(game)
@@ -94,6 +169,7 @@ def main() -> int:
         print("Ape Adventure smoke test OK")
         return 0
     finally:
+        wait_for_audio(state)
         pygame.quit()
 
 
