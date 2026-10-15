@@ -93,5 +93,8 @@ class Game:
             self.state.draw(self.screen)
             pygame.display.flip()
 
+        # Let the state stop background work (e.g. the music build thread)
+        # before the mixer goes away underneath it.
+        self.state.exit()
         pygame.quit()
         sys.exit(0)

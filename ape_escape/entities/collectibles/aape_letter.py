@@ -9,14 +9,6 @@ from ape_escape.entities.entity import Entity
 from ape_escape.render import palette as P
 
 LETTERS = ("A1", "A2", "P", "E")
-_font_cache: pygame.font.Font | None = None
-
-
-def _font() -> pygame.font.Font:
-    global _font_cache
-    if _font_cache is None:
-        _font_cache = pygame.font.SysFont("arial", 15, bold=True)
-    return _font_cache
 
 
 class AapeLetter(Entity):
@@ -26,6 +18,9 @@ class AapeLetter(Entity):
         self.letter = letter
         self.float_t = 0.0
         self.collected = False
+        # Created lazily per letter, not per module: a Font from an earlier
+        # pygame session is invalid after pygame.quit() + pygame.init().
+        self._font: pygame.font.Font | None = None
 
     def update(self, dt: float, world) -> None:
         self.float_t += dt
@@ -51,5 +46,7 @@ class AapeLetter(Entity):
 
         # Letter (A1/A2 → "A")
         char = self.letter[0]
-        txt = _font().render(char, True, (50, 25, 8))
+        if self._font is None:
+            self._font = pygame.font.SysFont("arial", 15, bold=True)
+        txt = self._font.render(char, True, (50, 25, 8))
         surf.blit(txt, txt.get_rect(center=(cx, cy)))
