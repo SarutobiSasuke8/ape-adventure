@@ -6,11 +6,15 @@ drives the real ``LevelState`` (real physics, enemies, vines, boss, goal
 totem) at a fixed 60 fps step. A run passes only if the player touches the
 goal totem and the state machine moves to ``ResultsState`` without dying.
 
+``play_world`` chains the whole of World 1 (1-1 to 1-4) the way a player
+does, following each ``ResultsState`` into the next level, and records the
+checkpoints reached and the King Saurus coconut volleys dodged on the way.
+
 Audio is replaced by a silent stub, so no music thread is started.
 
 Usage (from the repo root):
 
-    python -m tests.playthrough            # run every level, print a summary
+    python -m tests.playthrough            # chain 1-1 to 1-4, print a summary
     python -m tests.playthrough 1-2 --trace  # one level, position trace
 """
 from __future__ import annotations
@@ -36,7 +40,8 @@ TILE = C.TILE_SIZE
 class SilentAudio:
     """Stand-in for AudioManager: same surface, no mixer, no music thread."""
 
-    def __init__(self) -> None:
+    def __init__(self, music_key: str = "") -> None:
+        self.music_key = music_key
         self.played: list[str] = []
 
     def set_volumes(self, music: float, sfx: float) -> None: ...
@@ -252,14 +257,53 @@ def script_1_3(st) -> Script:
     yield from run_to(st, 135 * TILE, attack=R)
 
 
+def live_coconuts(st) -> list:
+    from ape_escape.entities.hazards.coconut import Coconut
+
+    return [e for e in st.level.entities if isinstance(e, Coconut) and e.state in ("warn", "fall")]
+
+
+def coconut_threat(st, x: float, margin: float = 10.0) -> bool:
+    """True if a coconut still to land would hit a player centred at *x*."""
+    half = st.player.rect.width / 2 + margin
+    return any(abs(c.rect.centerx - x) < half + c.rect.width / 2 for c in live_coconuts(st))
+
+
+def hold_ledge_dodging(st, ledge_x: float, lo: float, hi: float, until: Callable[[], bool],
+                       limit: int = 900) -> Script:
+    """Stand near *ledge_x* until *until()*; step out of any coconut shadow
+    (staying between *lo* and *hi*) and come back once it has landed."""
+    for _ in range(limit):
+        if until():
+            return
+        if coconut_threat(st, ledge_x):
+            # Nearest safe spot along the ledge / corridor.
+            options = [x for x in range(int(lo), int(hi) + 1, 4) if not coconut_threat(st, x)]
+            goal = min(options, key=lambda x: abs(x - cx(st))) if options else lo
+        else:
+            goal = ledge_x
+        dx = goal - cx(st)
+        yield S(move_x=0.0 if abs(dx) <= 3 else (1.0 if dx > 0 else -1.0), run=abs(dx) > 40)
+    raise ScriptError("hold_ledge_dodging timed out")
+
+
 def script_1_4(st) -> Script:
     from ape_escape.entities.enemies.king_saurus import KingSaurus
 
     boss = next(e for e in st.level.entities if isinstance(e, KingSaurus))
-    ledge_x = 2 * TILE + TILE / 2
+    arena = boss.arena_left or 0.0
+    ledge_x = arena + 2 * TILE + TILE / 2      # middle of the left safe ledge
+    ledge_face = arena + 4 * TILE              # where he crashes
+    # Approach corridor: Snapper, stump, then the arena-gate checkpoint.
+    yield from jump_at(st, arena - 4 * TILE, hold=20)
+    yield from run_to(st, ledge_x - 24)
+    yield from land(st)
+    yield from walk_to(st, ledge_x)
     for _ in range(3):
-        # Wait on the left ledge for him to crash into it.
-        yield from wait_until(st, lambda: boss.state == "dazed" or not boss.alive, limit=900)
+        # Wait on the left ledge for him to crash into it, dodging coconuts.
+        yield from hold_ledge_dodging(
+            st, ledge_x, lo=arena - 6 * TILE, hi=ledge_face - 20,
+            until=lambda: (boss.state == "dazed" and not live_coconuts(st)) or not boss.alive)
         # Hop off the ledge onto his head.
         yield S(move_x=1.0, jump=True, jump_held=True)
         hit_hp = boss.hp
@@ -272,7 +316,7 @@ def script_1_4(st) -> Script:
         if boss.hp <= 0:
             break
         # Bounce back onto the ledge before his next charge.
-        while not (st.player.on_ground and cx(st) < 4 * TILE):
+        while not (st.player.on_ground and cx(st) < ledge_face):
             yield S(move_x=-1.0, jump_held=True,
                     jump=st.player.on_ground)
         yield from walk_to(st, ledge_x)
@@ -310,6 +354,9 @@ class RunResult:
     letters: int
     error: str = ""
     trace: list[str] = field(default_factory=list)
+    checkpoints: int = 0           # checkpoints reached
+    coconut_volleys: int = 0       # King Saurus coconut volleys thrown
+    coconuts: int = 0              # coconuts dropped in those volleys
 
     @property
     def seconds(self) -> float:
@@ -317,21 +364,32 @@ class RunResult:
 
     def summary(self) -> str:
         status = "COMPLETED" if self.completed else f"FAILED ({self.error})"
+        extra = f", checkpoints {self.checkpoints}"
+        if self.coconut_volleys:
+            extra += f", coconut volleys {self.coconut_volleys} ({self.coconuts} coconuts)"
         return (f"{self.level_id}: {status} in {self.seconds:.1f}s game time, "
                 f"hits {self.hits_taken}, deaths {self.deaths}, "
-                f"bananas {self.bananas}/{self.total_bananas}, letters {self.letters}/4")
+                f"bananas {self.bananas}/{self.total_bananas}, letters {self.letters}/4{extra}")
 
 
 def play_level(level_index: int, *, max_seconds: float = 180.0, trace: bool = False,
-               draw_every: int = 15) -> RunResult:
-    """Run one level's script to the goal. Assumes pygame is initialised."""
+               draw_every: int = 15, game: HarnessGame | None = None) -> RunResult:
+    """Run one level's script to the goal. Assumes pygame is initialised.
+
+    Pass *game* to keep playing in an existing harness (see ``play_world``)."""
     from ape_escape.core.states import ResultsState
+    from ape_escape.entities.enemies.king_saurus import KingSaurus
+    from ape_escape.entities.hazards.coconut import Coconut
     from ape_escape.levels.world_data import ALL_WORLDS
 
     entry = ALL_WORLDS[0].levels[level_index]
     screen = pygame.display.get_surface() or pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
-    game = HarnessGame(screen)
+    if game is None:
+        game = HarnessGame(screen)
+    game.next_state = None
     st = make_level_state(game, level_index)
+    boss = next((e for e in st.level.entities if isinstance(e, KingSaurus)), None)
+    coconuts_seen: set[int] = set()
     assert st.level.level_id == entry.id, f"loaded {st.level.level_id!r}, expected {entry.id!r}"
 
     script = SCRIPTS[entry.id](st)
@@ -351,6 +409,8 @@ def play_level(level_index: int, *, max_seconds: float = 180.0, trace: bool = Fa
             if draw_every and frames % draw_every == 0:
                 st.draw(screen)
             frames += 1
+            if boss is not None:
+                coconuts_seen.update(id(e) for e in st.level.entities if isinstance(e, Coconut))
             p = st.player
             if p.health < last_health and not p.dead:
                 hits += 1
@@ -389,7 +449,37 @@ def play_level(level_index: int, *, max_seconds: float = 180.0, trace: bool = Fa
         letters=len(st.aape_collected),
         error=error if not completed else "",
         trace=lines,
+        checkpoints=sum(1 for c in st.level.checkpoints() if c.active),
+        coconut_volleys=boss.volleys if boss is not None else 0,
+        coconuts=len(coconuts_seen),
     )
+
+
+def play_world(**kwargs) -> list[RunResult]:
+    """Play World 1 end to end: 1-1, then follow each ResultsState's ENTER
+    into the next level, until the world-clear screen returns to the title.
+    Stops at the first level that is not cleared. Assumes pygame is initialised."""
+    from ape_escape.core.states import LevelState, ResultsState, TitleState
+
+    screen = pygame.display.get_surface() or pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+    game = HarnessGame(screen)
+    results: list[RunResult] = []
+    index = 0
+    while True:
+        res = play_level(index, game=game, **kwargs)
+        results.append(res)
+        if not res.completed:
+            break
+        screen_state = game.next_state
+        assert isinstance(screen_state, ResultsState), screen_state
+        screen_state.draw(screen)
+        game.next_state = None
+        screen_state.handle(S(confirm=True))
+        if isinstance(game.next_state, TitleState):
+            break
+        assert isinstance(game.next_state, LevelState), game.next_state
+        index = game.next_state.level_index
+    return results
 
 
 def main(argv: list[str]) -> int:
@@ -402,8 +492,17 @@ def main(argv: list[str]) -> int:
     pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
     ok = True
     try:
+        if not wanted:
+            results = play_world(trace=trace)
+            for res in results:
+                if trace:
+                    print("\n".join(res.trace))
+                print(res.summary())
+            ok = [r.level_id for r in results] == ids and all(r.completed for r in results)
+            print(f"World 1 chain {'CLEARED' if ok else 'NOT CLEARED'}: "
+                  f"{' -> '.join(r.level_id for r in results)}")
         for i, level_id in enumerate(ids):
-            if wanted and level_id not in wanted:
+            if level_id not in wanted:
                 continue
             res = play_level(i, trace=trace)
             if trace:

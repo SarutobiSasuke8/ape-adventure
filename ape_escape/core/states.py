@@ -187,6 +187,8 @@ class LevelState(GameplayState):
         self.banana_count = 0
         self.aape_collected: set[str] = set()
         self.level_timer = 0.0
+        self.checkpoint = None   # last Checkpoint reached; respawns go there
+        self.deaths = 0
 
     def enter(self) -> None:
         from ape_escape.entities.player import Player
@@ -199,10 +201,11 @@ class LevelState(GameplayState):
         sp = self.level.spawn_point
         self.player = Player(sp.x, sp.y)
         self.camera = Camera(self.level.bounds)
+        self.camera.lock_rect = self._arena_lock()
         self.camera.snap_to(pygame.Vector2(sp.x + 14, sp.y + 22))
         self.renderer = Renderer(self.game.screen)
         self.hud = Hud()
-        self.audio = AudioManager()
+        self.audio = AudioManager(self.level.music_key)
         self.on_settings_changed()
         from ape_escape.render.particles import ParticleSystem
         self.particles = ParticleSystem()
@@ -231,6 +234,16 @@ class LevelState(GameplayState):
         except Exception as exc:  # missing map, parse error, bad pytmx — stay playable
             print(f"[level] could not load {tmx_path} ({exc}); using test playground")
             return build_test_level()
+
+    def _arena_lock(self):
+        """Camera lock rect for a boss arena, if the level's boss defines one."""
+        from ape_escape.entities.enemies.king_saurus import KingSaurus
+
+        for ent in self.level.entities:
+            if isinstance(ent, KingSaurus) and ent.arena_left is not None and ent.arena_right is not None:
+                left, right = int(ent.arena_left), int(ent.arena_right)
+                return pygame.Rect(left, 0, right - left, self.level.bounds.height)
+        return None
 
     def exit(self) -> None:
         if self.audio:
@@ -338,6 +351,8 @@ class LevelState(GameplayState):
         self._check_vines()
         self._update_boss_links()
         self._check_enemy_collisions()
+        self._check_hazards()
+        self._check_checkpoints()
         self._check_collectible_collisions()
         self._check_goal_totem()
 
@@ -398,15 +413,23 @@ class LevelState(GameplayState):
         from ape_escape.entities.collectibles.goal_totem import GoalTotem
 
         boss_alive = False
+        spawned: list = []
         for ent in self.level.entities:
             if isinstance(ent, KingSaurus):
                 boss_alive = True
                 ent.target_x = self.player.rect.centerx
+                if ent.pending_spawns:
+                    spawned.extend(ent.pending_spawns)
+                    ent.pending_spawns.clear()
+                    self.audio.play("stomp_enemy")
+                    self._trigger_shake(4.0, 0.6)
                 if ent.crashed:
                     ent.crashed = False
                     self.audio.play("stomp_enemy")
                     self._trigger_shake(6.0, 0.30)
                     self.particles.emit("dust", float(ent.rect.centerx), float(ent.rect.bottom), count=10)
+        if spawned:
+            self.level.entities.extend(spawned)
         if boss_alive:
             return
         for ent in self.level.entities:
@@ -444,18 +467,55 @@ class LevelState(GameplayState):
                 continue
             if not ent.harmful:
                 continue
-            if self.player.invuln_timer <= 0:
-                self.player.health -= 1
-                self.player.invuln_timer = C.PLAYER_INVULN_AFTER_HIT
-                self.audio.play("player_hurt")
-                self._trigger_hit_pause(0.07)
-                self._trigger_shake(5.0, 0.35)
-                # Knock back
-                kb_dir = 1 if self.player.pos.x < ent.rect.centerx else -1
-                self.player.velocity.x = -kb_dir * 180
-                self.player.velocity.y = -250
-                if self.player.health <= 0:
-                    self._trigger_death(play_hurt_sound=False)
+            self._hurt_player(ent.rect)
+
+    def _hurt_player(self, source: pygame.Rect) -> None:
+        """One hit from *source*: lose a heart, get knocked back, maybe die."""
+        if self.player.dead or self.player.invuln_timer > 0:
+            return
+        self.player.health -= 1
+        self.player.invuln_timer = C.PLAYER_INVULN_AFTER_HIT
+        self.audio.play("player_hurt")
+        self._trigger_hit_pause(0.07)
+        self._trigger_shake(5.0, 0.35)
+        # Knock back
+        kb_dir = 1 if self.player.pos.x < source.centerx else -1
+        self.player.velocity.x = -kb_dir * 180
+        self.player.velocity.y = -250
+        if self.player.health <= 0:
+            self._trigger_death(play_hurt_sound=False)
+
+    def _check_hazards(self) -> None:
+        """Falling coconuts: harmful while dropping, burst on contact."""
+        from ape_escape.entities.hazards.coconut import Coconut
+
+        p = self.player
+        if p.dead:
+            return
+        for ent in self.level.entities:
+            if isinstance(ent, Coconut) and ent.harmful and p.rect.colliderect(ent.rect):
+                ent.smash()
+                self.particles.emit("puff", float(ent.rect.centerx), float(ent.rect.centery), count=6)
+                self._hurt_player(ent.rect)
+
+    def _check_checkpoints(self) -> None:
+        """Touching a checkpoint makes it the respawn point (the latest one wins)."""
+        from ape_escape.entities.props.checkpoint import Checkpoint
+
+        p = self.player
+        if p.dead:
+            return
+        for ent in self.level.entities:
+            if isinstance(ent, Checkpoint) and p.rect.colliderect(ent.rect) and ent.activate():
+                self.checkpoint = ent
+                self.audio.play("collect_letter")
+                self.particles.emit("sparkle", float(ent.rect.centerx), float(ent.rect.top + 12), count=10)
+
+    def respawn_point(self) -> pygame.Vector2:
+        """Where the next respawn puts the player (top-left)."""
+        if self.checkpoint is not None:
+            return self.checkpoint.respawn_point()
+        return pygame.Vector2(self.level.spawn_point)
 
     def _enemy_hit_fx(self, ent) -> None:
         self.audio.play("stomp_enemy")
@@ -531,9 +591,10 @@ class LevelState(GameplayState):
             self.audio.play("player_hurt")
         self._trigger_shake(7.0, 0.50)
         self.respawn_timer = 1.2
+        self.deaths += 1
 
     def _respawn(self) -> None:
-        sp = self.level.spawn_point
+        sp = self.respawn_point()
         self.player.reset_posture()
         self.player.pos = pygame.Vector2(sp)
         self.player.rect.topleft = (int(sp.x), int(sp.y))

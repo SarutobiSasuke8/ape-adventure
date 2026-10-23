@@ -13,6 +13,10 @@ Authoring contract (kept in sync with tools/build_levels.py):
   * Exceptions to bottom-centre: a "vine" object's (x, y) is its *anchor*
     (top), with a "length" property in px. A "goal_totem" may carry
     "requires_boss" = "true" to stay hidden until the boss is beaten.
+  * A "checkpoint" is a respawn post (bottom-centre on its surface).
+  * A "king_saurus" may carry "arena_left" / "arena_right" (world px): the
+    arena he waits for the player in, drops coconuts in, and that the camera
+    locks to while the player is inside it.
   * Optional map properties: "level_id", "music_key" (override the defaults).
 """
 from __future__ import annotations
@@ -44,6 +48,7 @@ def _make_entity(kind: str, props: dict):
     from ape_escape.entities.collectibles.bonus_barrel import BonusBarrel
     from ape_escape.entities.collectibles.goal_totem import GoalTotem
     from ape_escape.entities.hazards.spike import Spike
+    from ape_escape.entities.props.checkpoint import Checkpoint
 
     match kind:
         case "snapper":
@@ -53,7 +58,10 @@ def _make_entity(kind: str, props: dict):
         case "slinger":
             return Slinger(0, 0)
         case "king_saurus":
-            return KingSaurus(0, 0)
+            return KingSaurus(0, 0, arena_left=_opt_float(props.get("arena_left")),
+                              arena_right=_opt_float(props.get("arena_right")))
+        case "checkpoint":
+            return Checkpoint(0, 0)
         case "banana":
             return Banana(0, 0)
         case "bunch":
@@ -72,6 +80,13 @@ def _make_entity(kind: str, props: dict):
             return Spike(0, 0)
         case _:
             return None
+
+
+def _opt_float(value) -> float | None:
+    try:
+        return None if value in (None, "") else float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _seat(entity, anchor_x: float, anchor_y: float) -> None:

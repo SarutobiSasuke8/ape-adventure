@@ -17,6 +17,11 @@ class Level:
         self.total_bananas = 0
         self.total_letters = 0
 
+    def checkpoints(self) -> list:
+        from ape_escape.entities.props.checkpoint import Checkpoint
+
+        return [e for e in self.entities if isinstance(e, Checkpoint)]
+
 
 def build_test_level() -> Level:
     """Hardcoded playground: ground floor, platforms, pits, enemies, collectibles."""
