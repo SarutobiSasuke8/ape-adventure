@@ -45,11 +45,11 @@ A complete, playable proof of feel. 1 world, 4 levels, 1 boss, 1 character.
 - [ ] Enemy sprites (3 enemies, 4–6 frames each)
 - [ ] Parallax sky for jungle
 - [ ] Particle effects: dust, leaf, splash, sparkle
-- [ ] Build levels 1-1 through 1-3 in Tiled
+- [x] Build levels 1-1 through 1-3 (authored as data in `tools/build_levels.py`, emitted as Tiled `.tmx`)
 
 ### Phase 1.6 — Boss & Polish (Weeks 7–8)
-- [ ] King Saurus 3-phase boss fight
-- [ ] Boss arena (1-4) build
+- [ ] King Saurus 3-phase boss fight (first pass done: charge, crash, daze, stomp, 3 hits with rising speed; coconut-bomb and stage-hazard phases still to do)
+- [x] Boss arena (1-4) build
 - [ ] Boss music
 - [ ] Title screen art
 - [ ] World map art
