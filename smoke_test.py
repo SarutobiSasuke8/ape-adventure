@@ -1,11 +1,11 @@
-"""Headless smoke test — runs the game for ~3 seconds with simulated input."""
+"""Legacy v0 headless smoke test: runs legacy_game.py for ~4 seconds with simulated input."""
 import os
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["SDL_AUDIODRIVER"] = "dummy"
 
 import sys
 import pygame
-import ape_escape as g
+import legacy_game as g  # the v0 single-file game; "ape_escape" is now the new package
 
 pygame.init()
 pygame.display.set_mode((g.WIDTH, g.HEIGHT))

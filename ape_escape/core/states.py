@@ -166,9 +166,17 @@ class TitleState(State):
 # Level
 # ---------------------------------------------------------------------------
 
+def world_levels():
+    """The ordered level list for World 1 (the vertical slice)."""
+    from ape_escape.levels.world_data import ALL_WORLDS
+
+    return ALL_WORLDS[0].levels
+
+
 class LevelState(GameplayState):
-    def __init__(self, game) -> None:
+    def __init__(self, game, level_index: int = 0) -> None:
         super().__init__(game)
+        self.level_index = level_index
         self.level = None
         self.player = None
         self.camera = None
@@ -207,14 +215,13 @@ class LevelState(GameplayState):
         self._run_dust_timer:  float = 0.0
 
     def _load_level(self):
-        """Load the first authored level from its .tmx, falling back to the
+        """Load this state's authored level from its .tmx, falling back to the
         hardcoded test playground if the map is missing or fails to parse."""
         from pathlib import Path
 
         from ape_escape.levels.level import build_test_level
-        from ape_escape.levels.world_data import ALL_WORLDS
 
-        entry = ALL_WORLDS[0].levels[0]
+        entry = world_levels()[self.level_index]
         levels_dir = Path(__file__).resolve().parent.parent / "levels"
         tmx_path = levels_dir / entry.tmx_path
         try:
@@ -232,7 +239,7 @@ class LevelState(GameplayState):
     # --- Pause menu hooks -------------------------------------------------
 
     def restart(self) -> None:
-        self.game.change_state(LevelState(self.game))
+        self.game.change_state(LevelState(self.game, self.level_index))
 
     def on_pause_changed(self, paused: bool) -> None:
         if self.audio:
@@ -328,6 +335,8 @@ class LevelState(GameplayState):
         self.level.entities = alive_entities
 
         # Collision checks
+        self._check_vines()
+        self._update_boss_links()
         self._check_enemy_collisions()
         self._check_collectible_collisions()
         self._check_goal_totem()
@@ -365,6 +374,47 @@ class LevelState(GameplayState):
 
     # ------------------------------------------------------------------
 
+    def _check_vines(self) -> None:
+        """Grab a vine when the player's grip passes close to one in mid-air."""
+        from ape_escape.entities.props.vine import Vine
+
+        p = self.player
+        if p.dead or p.vine is not None:
+            return
+        grip = p.grip_point()
+        for ent in self.level.entities:
+            if isinstance(ent, Vine) and p.can_grab(ent):
+                radius = ent.grab_check(grip)
+                if radius is not None:
+                    p.attach_to_vine(ent, radius)
+                    self.audio.play("land")
+                    self.particles.emit("leaf", grip.x, grip.y, count=5)
+                    return
+
+    def _update_boss_links(self) -> None:
+        """Feed the boss the player's position, juice his wall crashes, and
+        reveal a boss-locked goal totem once no boss is left standing."""
+        from ape_escape.entities.enemies.king_saurus import KingSaurus
+        from ape_escape.entities.collectibles.goal_totem import GoalTotem
+
+        boss_alive = False
+        for ent in self.level.entities:
+            if isinstance(ent, KingSaurus):
+                boss_alive = True
+                ent.target_x = self.player.rect.centerx
+                if ent.crashed:
+                    ent.crashed = False
+                    self.audio.play("stomp_enemy")
+                    self._trigger_shake(6.0, 0.30)
+                    self.particles.emit("dust", float(ent.rect.centerx), float(ent.rect.bottom), count=10)
+        if boss_alive:
+            return
+        for ent in self.level.entities:
+            if isinstance(ent, GoalTotem) and ent.locked:
+                ent.locked = False
+                self.audio.play("extra_life")
+                self.particles.emit("sparkle", float(ent.rect.centerx), float(ent.rect.centery), count=16)
+
     def _check_enemy_collisions(self) -> None:
         from ape_escape.entities.enemies.enemy import Enemy
 
@@ -384,15 +434,17 @@ class LevelState(GameplayState):
             )
             rolling = self.player.rolling_timer > 0
 
-            if stomping or rolling:
-                ent.die()
-                self.audio.play("stomp_enemy")
-                self._trigger_hit_pause(0.055)
-                self._trigger_shake(3.0, 0.18)
-                self.particles.emit("puff", float(ent.rect.centerx), float(ent.rect.centery), count=7)
-                if stomping:
-                    self.player.velocity.y = -380  # bounce up
-            elif self.player.invuln_timer <= 0:
+            if stomping:
+                if ent.on_stomp():
+                    self._enemy_hit_fx(ent)
+                self.player.velocity.y = ent.STOMP_BOUNCE  # bounce up
+                continue
+            if rolling and ent.on_roll():
+                self._enemy_hit_fx(ent)
+                continue
+            if not ent.harmful:
+                continue
+            if self.player.invuln_timer <= 0:
                 self.player.health -= 1
                 self.player.invuln_timer = C.PLAYER_INVULN_AFTER_HIT
                 self.audio.play("player_hurt")
@@ -404,6 +456,12 @@ class LevelState(GameplayState):
                 self.player.velocity.y = -250
                 if self.player.health <= 0:
                     self._trigger_death(play_hurt_sound=False)
+
+    def _enemy_hit_fx(self, ent) -> None:
+        self.audio.play("stomp_enemy")
+        self._trigger_hit_pause(0.055)
+        self._trigger_shake(3.0, 0.18)
+        self.particles.emit("puff", float(ent.rect.centerx), float(ent.rect.centery), count=7)
 
     def _check_collectible_collisions(self) -> None:
         from ape_escape.entities.collectibles.banana import Banana
@@ -433,7 +491,7 @@ class LevelState(GameplayState):
         from ape_escape.entities.collectibles.goal_totem import GoalTotem
 
         for ent in self.level.entities:
-            if isinstance(ent, GoalTotem) and not ent.touched:
+            if isinstance(ent, GoalTotem) and not ent.touched and not ent.locked:
                 if self.player.rect.colliderect(ent.rect):
                     ent.touched = True
                     self.audio.play("goal_totem")
@@ -454,6 +512,7 @@ class LevelState(GameplayState):
                         "new_time": rec_flags["new_time"],
                         "new_bananas": rec_flags["new_bananas"],
                         "best_time": self.game.save.best_time(self.level.level_id),
+                        "level_index": self.level_index,
                     }
                     self.game.change_state(ResultsState(self.game, results))
 
@@ -462,9 +521,11 @@ class LevelState(GameplayState):
             return
         self.player.dead = True
         self.player.health = 0
+        self.player.reset_posture()
         self.player.velocity = pygame.Vector2(0, 0)
         self.player.rolling_timer = 0.0
         self.player.jump_buffer_timer = 0.0
+        self.player.roll_buffer_timer = 0.0
         self.player.coyote_timer = 0.0
         if play_hurt_sound:
             self.audio.play("player_hurt")
@@ -473,6 +534,7 @@ class LevelState(GameplayState):
 
     def _respawn(self) -> None:
         sp = self.level.spawn_point
+        self.player.reset_posture()
         self.player.pos = pygame.Vector2(sp)
         self.player.rect.topleft = (int(sp.x), int(sp.y))
         self.player.velocity = pygame.Vector2(0, 0)
@@ -482,6 +544,7 @@ class LevelState(GameplayState):
         self.player.state = "idle"
         self.player.rolling_timer = 0.0
         self.player.jump_buffer_timer = 0.0
+        self.player.roll_buffer_timer = 0.0
         self.player.coyote_timer = 0.0
         self.player.run_buildup = 0.0
         self.player.invuln_timer = 1.5
@@ -512,9 +575,19 @@ class ResultsState(State):
         self.font_med = pygame.font.SysFont("arial", 28)
         self.font_small = pygame.font.SysFont("arial", 20)
 
+    @property
+    def next_level_index(self) -> int | None:
+        """Index of the level that follows, or None after the world's last level."""
+        nxt = self.results.get("level_index", 0) + 1
+        return nxt if nxt < len(world_levels()) else None
+
     def handle(self, snapshot: InputSnapshot) -> None:
         if snapshot.confirm or snapshot.start:
-            self.game.change_state(TitleState(self.game))
+            nxt = self.next_level_index
+            if nxt is None:
+                self.game.change_state(TitleState(self.game))
+            else:
+                self.game.change_state(LevelState(self.game, nxt))
 
     def update(self, dt: float) -> None:
         self.t += dt
@@ -533,7 +606,8 @@ class ResultsState(State):
         # Title
         still = self.reduced_motion
         bob = 0 if still else int(math.sin(self.t * 2.0) * 3)
-        title = self.font_big.render("LEVEL CLEAR!", True, (250, 210, 90))
+        world_clear = self.next_level_index is None
+        title = self.font_big.render("WORLD CLEAR!" if world_clear else "LEVEL CLEAR!", True, (250, 210, 90))
         surf.blit(title, title.get_rect(center=(w // 2, 80 + bob)))
 
         r = self.results
@@ -570,7 +644,12 @@ class ResultsState(State):
             lx += 44
 
         if still or int(self.t * 2) % 2 == 0:
-            prompt = self.font_small.render("Press ENTER to return to title", True, (180, 220, 160))
+            if world_clear:
+                msg = "Tangle Jungle cleared! Press ENTER to return to title"
+            else:
+                nxt = world_levels()[self.next_level_index]
+                msg = f"Press ENTER for {nxt.id} {nxt.name}"
+            prompt = self.font_small.render(msg, True, (180, 220, 160))
             surf.blit(prompt, prompt.get_rect(center=(w // 2, h - 60)))
 
 

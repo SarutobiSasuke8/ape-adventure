@@ -10,6 +10,9 @@ Authoring contract (kept in sync with tools/build_levels.py):
     property (falling back to the object's class/type, then its name). The
     object's (x, y) is the entity's **bottom-centre**, placed on a surface.
     Letters carry a "letter" property; bonus barrels a "sub_level_id".
+  * Exceptions to bottom-centre: a "vine" object's (x, y) is its *anchor*
+    (top), with a "length" property in px. A "goal_totem" may carry
+    "requires_boss" = "true" to stay hidden until the boss is beaten.
   * Optional map properties: "level_id", "music_key" (override the defaults).
 """
 from __future__ import annotations
@@ -63,7 +66,8 @@ def _make_entity(kind: str, props: dict):
         case "bonus_barrel":
             return BonusBarrel(0, 0, props.get("sub_level_id", ""))
         case "goal_totem":
-            return GoalTotem(0, 0)
+            requires_boss = str(props.get("requires_boss", "")).strip().lower() in ("1", "true", "yes")
+            return GoalTotem(0, 0, requires_boss=requires_boss)
         case "spike":
             return Spike(0, 0)
         case _:
@@ -114,6 +118,12 @@ def load_tmx(path: Path | str, *, level_id: str = "", music_key: str = "") -> Le
                     # Spawn point: player top-left, seated above the surface.
                     lvl.spawn_point = pygame.Vector2(obj.x - 14, obj.y - 44)
                     spawn_set = True
+                    continue
+                if kind == "vine":
+                    from ape_escape.entities.props.vine import Vine
+
+                    length = float(props.get("length", 4 * tmx.tileheight))
+                    lvl.entities.append(Vine(obj.x, obj.y, length))
                     continue
                 entity = _make_entity(kind, props)
                 if entity is None:

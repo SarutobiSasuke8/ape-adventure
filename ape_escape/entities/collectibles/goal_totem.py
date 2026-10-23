@@ -10,15 +10,19 @@ from ape_escape.render import palette as P
 
 
 class GoalTotem(Entity):
-    def __init__(self, x: float, y: float) -> None:
+    def __init__(self, x: float, y: float, requires_boss: bool = False) -> None:
         super().__init__(x, y, w=48, h=80)
         self.t = 0.0
         self.touched = False
+        # Boss arenas: hidden and untouchable until the boss is defeated.
+        self.locked = requires_boss
 
     def update(self, dt: float, world) -> None:
         self.t += dt
 
     def draw(self, surf: pygame.Surface, camera) -> None:
+        if self.locked:
+            return
         sp = camera.world_to_screen(self.pos)
         sx, sy = int(sp.x), int(sp.y)
         cx = sx + 24

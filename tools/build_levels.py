@@ -16,6 +16,10 @@ TMX authoring contract (kept in sync with the loader):
     property (and a mirrored `type`/class attribute). The object's (x, y) is
     the entity's **bottom-centre**, placed on a surface. Letters carry a
     "letter" property; bonus barrels a "sub_level_id".
+  * Vines are the exception: (x, y) is the vine's *anchor* (top edge of the
+    given row) and a "length" property gives the rope length in px.
+  * A goal totem with "requires_boss" = "true" stays hidden until the boss
+    is defeated (boss arenas).
 """
 from __future__ import annotations
 
@@ -59,6 +63,8 @@ class LevelSpec:
     platforms: tuple[tuple[int, int, int], ...]  # (row, col_start, col_end_exclusive)
     spawns: list[Spawn]
     out_path: str                            # relative to LEVELS_DIR
+    # Extra solid rectangles (col, row, cols, rows): walls, hollow logs, steps.
+    solids: tuple[tuple[int, int, int, int], ...] = ()
 
 
 def build_grid(spec: LevelSpec) -> list[list[int]]:
@@ -71,6 +77,10 @@ def build_grid(spec: LevelSpec) -> list[list[int]]:
     for row, c0, c1 in spec.platforms:
         for col in range(c0, c1):
             grid[row][col] = 1
+    for col, row, cols, rows in spec.solids:
+        for r in range(row, row + rows):
+            for c in range(col, col + cols):
+                grid[r][c] = 1
     return grid
 
 
@@ -221,7 +231,204 @@ def spec_1_1() -> LevelSpec:
     )
 
 
-ALL_SPECS = (spec_1_1,)
+# ---------------------------------------------------------------------------
+# Level 1-2, "Vine Valley": introduces the vine swing.
+#
+# Four gaps are too wide to jump (8+ tiles; a full running jump clears about
+# 5). Each has a vine. The first vine sits over a short drop with bananas
+# tracing the swing, the last gap needs two vines in a row.
+# ---------------------------------------------------------------------------
+
+VINE_ROW = 9       # anchor row: the rope hangs from the top edge of row 9
+VINE_LEN = 128     # 4 tiles
+
+
+def vine(col: int, row: int = VINE_ROW, length: int = VINE_LEN) -> Spawn:
+    return Spawn("vine", col, row, {"length": str(length)})
+
+
+def spec_1_2() -> LevelSpec:
+    COLS, ROWS = 130, 18
+    GROUND = 16
+    spawns: list[Spawn] = [Spawn("spawn", 3, GROUND)]
+
+    pits = (
+        (16, 23),    # gap A: first vine (teaching)
+        (40, 47),    # gap B: vine, letter A2 at the top of the swing
+        (56, 58),    # ordinary jump, a breather
+        (64, 77),    # gap C: two vines back to back
+        (96, 103),   # gap D: vine with a Hopper waiting on the far side
+    )
+    platforms = (
+        (13, 28, 34),   # letter A1 perch
+        (12, 86, 92),   # letter E perch, Snapper guard
+    )
+
+    spawns += [vine(18), vine(42), vine(66), vine(72), vine(98)]
+
+    spawns += [
+        Spawn("snapper", 8, GROUND),       # warm-up, same as 1-1
+        Spawn("hopper", 31, GROUND),
+        Spawn("snapper", 52, GROUND),
+        Spawn("hopper", 83, GROUND),
+        Spawn("snapper", 89, 12),          # on the E perch
+        Spawn("hopper", 108, GROUND),      # right after gap D's landing
+        Spawn("snapper", 116, GROUND),
+    ]
+
+    # Bananas trace each swing so the player reads the arc.
+    spawns += banana_arc(4, 15, GROUND - 1)
+    spawns += [Spawn("banana", c + 0.5, r) for c, r in ((18, 13), (20, 13), (22, 12), (24, 12))]
+    spawns += banana_arc(26, 39, GROUND - 1, step=3)
+    spawns += [Spawn("banana", c + 0.5, r) for c, r in ((42, 13), (44, 13), (47, 12))]
+    spawns += banana_arc(49, 63, GROUND - 1, step=3)
+    spawns += [Spawn("banana", c + 0.5, r) for c, r in ((66, 13), (68, 13), (72, 13), (74, 13), (77, 12))]
+    spawns += banana_arc(79, 95, GROUND - 1, step=4)
+    spawns += [Spawn("banana", c + 0.5, r) for c, r in ((98, 13), (100, 13), (103, 12))]
+    spawns += banana_arc(105, 124, GROUND - 1, step=3)
+
+    spawns += [
+        Spawn("letter", 31, 12, {"letter": "A1"}),   # perch above the ground
+        Spawn("letter", 45, 11, {"letter": "A2"}),   # top of the gap B swing
+        Spawn("letter", 70, 11, {"letter": "P"}),    # between the twin vines
+        Spawn("letter", 90, 11, {"letter": "E"}),    # perch with a Snapper
+    ]
+    spawns.append(Spawn("goal_totem", 125, GROUND))
+
+    return LevelSpec(
+        level_id="1-2",
+        name="Vine Valley",
+        cols=COLS,
+        rows=ROWS,
+        music_key="tangle_jungle",
+        ground_rows=(GROUND, GROUND + 1),
+        pits=pits,
+        platforms=platforms,
+        spawns=spawns,
+        out_path="tangle_jungle/1_2_vine_valley.tmx",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Level 1-3, "Hollow Log Run": introduces rolling under hollow logs.
+#
+# A hollow log is a solid trunk (rows 12-14) over a one-tile tunnel (row 15).
+# Bongo stands 44 px tall, so the only way through is to roll (24 px) and
+# keep rolling or crawl. Its top is 128 px up, too high to jump. Later logs
+# hide Snappers, so the roll is also the attack, and the pits grow to 4 tiles.
+# ---------------------------------------------------------------------------
+
+def hollow_log(col: int, length: int) -> tuple[int, int, int, int]:
+    return (col, 12, length, 3)
+
+
+def spec_1_3() -> LevelSpec:
+    COLS, ROWS = 140, 18
+    GROUND = 16
+    TUNNEL = GROUND  # entities in a tunnel stand on the ground row
+    spawns: list[Spawn] = [Spawn("spawn", 3, GROUND)]
+
+    solids = (
+        hollow_log(14, 6),     # log 1: empty, bananas show the way
+        hollow_log(38, 10),    # log 2: one Snapper inside, letter A2
+        (66, 14, 2, 2),        # step block: hop it, or take the high route onto log 3
+        hollow_log(70, 10),    # log 3: tunnel below, letter P on top
+        hollow_log(94, 12),    # log 4: two Snappers inside
+    )
+    pits = ((30, 33), (60, 63), (110, 113))
+    platforms = (
+        (13, 53, 58),    # letter A1 perch with a Snapper
+        (12, 116, 121),  # letter E perch
+    )
+
+    spawns += [
+        Spawn("snapper", 25, GROUND),     # open-ground roll practice
+        Spawn("snapper", 43, TUNNEL),     # inside log 2
+        Spawn("hopper", 50, GROUND),
+        Spawn("snapper", 55, 13),         # on the A1 perch
+        Spawn("hopper", 84, GROUND),
+        Spawn("snapper", 89, GROUND),
+        Spawn("snapper", 98, TUNNEL),     # inside log 4
+        Spawn("snapper", 103, TUNNEL),    # inside log 4
+        Spawn("hopper", 119, 12),         # guarding the E perch
+        Spawn("snapper", 127, GROUND),
+    ]
+
+    spawns += banana_arc(4, 13, GROUND - 1)
+    spawns += banana_arc(14, 20, GROUND, step=2)          # inside log 1
+    spawns += banana_arc(21, 30, GROUND - 1, step=3)
+    spawns += banana_arc(34, 38, GROUND - 1, step=2)
+    spawns += banana_arc(39, 48, GROUND, step=2)          # inside log 2
+    spawns += banana_arc(68, 80, 11, step=2)              # high route over log 3
+    spawns += banana_arc(81, 94, GROUND - 1, step=3)
+    spawns += banana_arc(95, 106, GROUND, step=2)         # inside log 4
+    spawns += banana_arc(122, 134, GROUND - 1, step=2)
+
+    spawns += [
+        Spawn("letter", 56, 12, {"letter": "A1"}),
+        Spawn("letter", 45, GROUND, {"letter": "A2"}),    # deep in log 2
+        Spawn("letter", 77, 12, {"letter": "P"}),         # on top of log 3
+        Spawn("letter", 118, 11, {"letter": "E"}),
+    ]
+    spawns.append(Spawn("goal_totem", 134, GROUND))
+
+    return LevelSpec(
+        level_id="1-3",
+        name="Hollow Log Run",
+        cols=COLS,
+        rows=ROWS,
+        music_key="tangle_jungle",
+        ground_rows=(GROUND, GROUND + 1),
+        pits=pits,
+        platforms=platforms,
+        spawns=spawns,
+        out_path="tangle_jungle/1_3_hollow_log_run.tmx",
+        solids=solids,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Level 1-4, "The Saurian's Arena": King Saurus, World 1 boss.
+#
+# One screen. Two-tile ledges at each end are the safe spots: King Saurus
+# (56 px tall) charges, crashes into a ledge face and is dazed. Stomp him
+# while he is dazed. Three stomps, each phase faster (phase 2+ adds a hop).
+# The goal totem only appears once he is beaten. Combines stomp (1-1) with
+# reading and timing an attack pattern.
+# ---------------------------------------------------------------------------
+
+def spec_1_4() -> LevelSpec:
+    COLS, ROWS = 30, 18
+    GROUND = 16
+    spawns: list[Spawn] = [Spawn("spawn", 2, 14)]
+
+    solids = (
+        (0, 0, 1, ROWS),          # left arena wall
+        (COLS - 1, 0, 1, ROWS),   # right arena wall
+        (1, 14, 3, 2),            # left safe ledge
+        (COLS - 4, 14, 3, 2),     # right safe ledge
+    )
+
+    spawns.append(Spawn("king_saurus", 18, GROUND))
+    spawns += [Spawn("banana", c + 0.5, 13) for c in (1, 2, 3, COLS - 4, COLS - 3, COLS - 2)]
+    spawns.append(Spawn("goal_totem", COLS // 2 - 1, GROUND, {"requires_boss": "true"}))
+
+    return LevelSpec(
+        level_id="1-4",
+        name="The Saurian's Arena",
+        cols=COLS,
+        rows=ROWS,
+        music_key="king_saurus",
+        ground_rows=(GROUND, GROUND + 1),
+        pits=(),
+        platforms=(),
+        spawns=spawns,
+        out_path="tangle_jungle/1_4_saurian_arena.tmx",
+        solids=solids,
+    )
+
+
+ALL_SPECS = (spec_1_1, spec_1_2, spec_1_3, spec_1_4)
 
 
 def main() -> int:

@@ -50,6 +50,7 @@ The shape mirrors the data flow: **Input → Core → Entities/Levels → Render
 | `enemies/king_saurus.py` | The boss — its own state machine for the 3 phases |
 | `collectibles/` | `banana.py`, `aape_letter.py`, `bunch.py`, `bonus_barrel.py`, `goal_totem.py` |
 | `hazards/` | `spike.py`, `pit.py` (most pits are tile-flagged, not entities) |
+| `props/` | `vine.py`: swing rope (pendulum). The player owns the swing while holding it |
 
 Every drawable entity exposes `update(dt, world)` and `draw(surf, camera)`. The `world` argument gives access to the level's tile grid + entity list.
 
