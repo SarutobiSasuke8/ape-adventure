@@ -12,6 +12,19 @@ from ape_escape.core import constants as C
 
 _SAMPLE_RATE = 44100
 
+# Per-level music: every level's music_key picks a style of the one procedural
+# loop below (tempo and key). No audio files are involved. Unknown keys play
+# the jungle style.
+MUSIC_STYLES: dict[str, dict[str, float]] = {
+    "tangle_jungle": {"bpm": 110.0, "pitch": 1.0},
+    "king_saurus":   {"bpm": 138.0, "pitch": 0.8409},  # faster, a minor third lower
+}
+DEFAULT_MUSIC_KEY = "tangle_jungle"
+
+
+def music_style(key: str) -> dict[str, float]:
+    return MUSIC_STYLES.get(key, MUSIC_STYLES[DEFAULT_MUSIC_KEY])
+
 
 def _gen_tone(
     freq: float,
@@ -68,21 +81,25 @@ def _gen_chord(
     return pygame.mixer.Sound(buffer=bytes(buf))
 
 
-def _gen_music_loop(cancel: threading.Event | None = None) -> pygame.mixer.Sound | None:
+def _gen_music_loop(cancel: threading.Event | None = None, bpm: float = 110.0,
+                    pitch: float = 1.0) -> pygame.mixer.Sound | None:
     """Procedural jungle theme — F pentatonic, 110 BPM, 2-bar loop (~4.4s).
+
+    *bpm* and *pitch* (a frequency multiplier) give the per-level styles in
+    MUSIC_STYLES; the defaults are the original jungle theme.
 
     Three voices: bass (square), melody (sine), rhythm (noise bursts).
     Single-pass renderer keeps RAM linear and avoids repeated full-buffer
     passes over the same samples. Returns None if ``cancel`` is set first.
     """
-    BPM   = 110
+    BPM   = bpm
     BEAT  = 60.0 / BPM
     LOOP  = BEAT * 8          # 2 bars = 8 beats
     N     = int(_SAMPLE_RATE * LOOP)
 
     # F pentatonic pitches (Hz)
-    F2, A2, C3, D3 = 87.3, 110.0, 130.8, 146.8
-    F3, A3, C4, D4, F4 = 174.6, 220.0, 261.6, 293.7, 349.2
+    F2, A2, C3, D3 = (f * pitch for f in (87.3, 110.0, 130.8, 146.8))
+    F3, A3, C4, D4, F4 = (f * pitch for f in (174.6, 220.0, 261.6, 293.7, 349.2))
 
     # Build schedule: (start_s, dur_s, freq, wave, vol)
     sched_raw: list[tuple[float, float, float, str, float]] = []
@@ -166,7 +183,8 @@ def _gen_music_loop(cancel: threading.Event | None = None) -> pygame.mixer.Sound
 
 
 class AudioManager:
-    def __init__(self) -> None:
+    def __init__(self, music_key: str = DEFAULT_MUSIC_KEY) -> None:
+        self.music_key = music_key if music_key in MUSIC_STYLES else DEFAULT_MUSIC_KEY
         pygame.mixer.init(frequency=_SAMPLE_RATE, size=-16, channels=1, buffer=512)
         pygame.mixer.set_num_channels(16)
         self._sfx: dict[str, pygame.mixer.Sound] = {}
@@ -187,7 +205,7 @@ class AudioManager:
     # ------------------------------------------------------------------
 
     def _build_music(self) -> None:
-        music = _gen_music_loop(self._cancel)
+        music = _gen_music_loop(self._cancel, **music_style(self.music_key))
         if music is not None:
             self._music = music
             self._music_ready.set()

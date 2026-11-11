@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="18" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="10">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="44" height="18" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="17">
  <properties>
   <property name="level_id" value="1-4"/>
   <property name="name" value="The Saurian's Arena"/>
@@ -8,9 +8,9 @@
  <tileset firstgid="1" name="jungle" tilewidth="32" tileheight="32" tilecount="1" columns="1">
   <image source="../../../ape_escape/assets/tilesets/jungle_placeholder.png" width="32" height="32"/>
  </tileset>
- <layer id="1" name="collision" width="30" height="18">
+ <layer id="1" name="collision" width="44" height="18">
   <data encoding="csv">
-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
   </data>
  </layer>
  <objectgroup id="2" name="entities">
@@ -20,49 +20,93 @@
   </properties>
   <point/>
  </object>
- <object id="2" type="king_saurus" x="592" y="512">
+ <object id="2" type="banana" x="160" y="416">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="3" type="banana" x="224" y="416">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="4" type="banana" x="288" y="416">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="5" type="banana" x="352" y="416">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="6" type="banana" x="384" y="384">
+  <properties>
+   <property name="kind" value="banana"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="7" type="snapper" x="272" y="448">
+  <properties>
+   <property name="kind" value="snapper"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="8" type="checkpoint" x="400" y="448">
+  <properties>
+   <property name="kind" value="checkpoint"/>
+  </properties>
+  <point/>
+ </object>
+ <object id="9" type="king_saurus" x="1040" y="512">
   <properties>
    <property name="kind" value="king_saurus"/>
+   <property name="arena_left" value="448"/>
+   <property name="arena_right" value="1408"/>
   </properties>
   <point/>
  </object>
- <object id="3" type="banana" x="64" y="416">
+ <object id="10" type="banana" x="512" y="416">
   <properties>
    <property name="kind" value="banana"/>
   </properties>
   <point/>
  </object>
- <object id="4" type="banana" x="96" y="416">
+ <object id="11" type="banana" x="544" y="416">
   <properties>
    <property name="kind" value="banana"/>
   </properties>
   <point/>
  </object>
- <object id="5" type="banana" x="128" y="416">
+ <object id="12" type="banana" x="576" y="416">
   <properties>
    <property name="kind" value="banana"/>
   </properties>
   <point/>
  </object>
- <object id="6" type="banana" x="864" y="416">
+ <object id="13" type="banana" x="1312" y="416">
   <properties>
    <property name="kind" value="banana"/>
   </properties>
   <point/>
  </object>
- <object id="7" type="banana" x="896" y="416">
+ <object id="14" type="banana" x="1344" y="416">
   <properties>
    <property name="kind" value="banana"/>
   </properties>
   <point/>
  </object>
- <object id="8" type="banana" x="928" y="416">
+ <object id="15" type="banana" x="1376" y="416">
   <properties>
    <property name="kind" value="banana"/>
   </properties>
   <point/>
  </object>
- <object id="9" type="goal_totem" x="464" y="512">
+ <object id="16" type="goal_totem" x="912" y="512">
   <properties>
    <property name="kind" value="goal_totem"/>
    <property name="requires_boss" value="true"/>

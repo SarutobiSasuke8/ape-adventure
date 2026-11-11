@@ -58,7 +58,10 @@ The parked v0 prototype has its own `python smoke_test.py`. It currently fails b
 - ✅ Save system (best time, bananas, AAPE per level)
 - ✅ Particles: dust, leaves, sparkles, puff
 - ✅ 3-layer parallax background, jungle tree silhouettes, hanging vines
-- 🔲 Slinger enemy, boss fight, Tiled level loader, world map
+- ✅ Tiled `.tmx` levels 1-1 to 1-4, chained by the results screen
+- ✅ King Saurus boss: charge, crash, stomp, and a coconut-volley phase after the second hit
+- ✅ Mid-level checkpoints in 1-2, 1-3 and 1-4
+- 🔲 Slinger enemy, world map
 
 For the full roadmap see [docs/ROADMAP.md](docs/ROADMAP.md).
 

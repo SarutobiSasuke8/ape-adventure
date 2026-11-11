@@ -85,6 +85,10 @@ class LevelLoadTest(_PygameCase):
         _, s4 = self.load(3)
         k4 = _kinds(s4.level)
         self.assertEqual(k4.get("KingSaurus"), 1)
+        self.assertEqual(k4.get("Checkpoint"), 1)
+        self.assertEqual(k2.get("Checkpoint"), 1)
+        self.assertEqual(_kinds(s3.level).get("Checkpoint"), 1)
+        self.assertNotIn("Checkpoint", _kinds(self.load(0)[1].level))
         totem = next(e for e in s4.level.entities if type(e).__name__ == "GoalTotem")
         self.assertTrue(totem.locked)
 
@@ -107,7 +111,10 @@ class CompletabilityTest(_PygameCase):
         self._assert_completes(2)
 
     def test_1_4_completes(self) -> None:
-        self._assert_completes(3)
+        res = pt.play_level(3)
+        self.assertTrue(res.completed, res.summary())
+        self.assertGreaterEqual(res.coconut_volleys, 1, "final phase never dropped coconuts")
+        self.assertEqual(res.hits_taken, 0, "the scripted run should dodge every coconut")
 
 
 class MechanicRequiredTest(_PygameCase):
@@ -191,25 +198,16 @@ class ProgressionTest(_PygameCase):
                     self.assertIsInstance(game.next_state, TitleState)
 
     def test_full_world_run_chains_through_results(self) -> None:
-        """Play 1-1 to 1-4 back to back, following ResultsState to each next level."""
-        game = pt.HarnessGame(self.screen)
-        index = 0
-        cleared = []
-        while True:
-            res = pt.play_level(index)
-            self.assertTrue(res.completed, res.summary())
-            cleared.append(res.level_id)
-            results = ResultsState(game, {
-                "level_id": res.level_id, "bananas": res.bananas, "total_bananas": res.total_bananas,
-                "aape": set(), "time": res.seconds, "aape_complete": False, "level_index": index,
-            })
-            game.next_state = None
-            results.handle(S(confirm=True))
-            if isinstance(game.next_state, TitleState):
-                break
-            self.assertIsInstance(game.next_state, LevelState)
-            index = game.next_state.level_index
-        self.assertEqual(cleared, [lv.id for lv in LEVELS])
+        """Play 1-1 to 1-4 back to back, following ResultsState to each next
+        level, through the 1-2 to 1-4 checkpoints and the coconut phase."""
+        results = pt.play_world()
+        summary = "\n".join(r.summary() for r in results)
+        self.assertEqual([r.level_id for r in results], [lv.id for lv in LEVELS], summary)
+        for r in results:
+            self.assertTrue(r.completed, summary)
+            self.assertEqual(r.deaths, 0, summary)
+        self.assertEqual([r.checkpoints for r in results], [0, 1, 1, 1], summary)
+        self.assertGreaterEqual(results[-1].coconut_volleys, 1, summary)
 
     def test_restart_keeps_the_current_level(self) -> None:
         game, st = self.load(2)

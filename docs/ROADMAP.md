@@ -48,9 +48,10 @@ A complete, playable proof of feel. 1 world, 4 levels, 1 boss, 1 character.
 - [x] Build levels 1-1 through 1-3 (authored as data in `tools/build_levels.py`, emitted as Tiled `.tmx`)
 
 ### Phase 1.6 — Boss & Polish (Weeks 7–8)
-- [ ] King Saurus 3-phase boss fight (first pass done: charge, crash, daze, stomp, 3 hits with rising speed; coconut-bomb and stage-hazard phases still to do)
-- [x] Boss arena (1-4) build
-- [ ] Boss music
+- [ ] King Saurus 3-phase boss fight (charge, crash, daze, stomp, 3 hits with rising speed; after hit 2 every cycle opens with a roar that drops a coconut volley with ground-shadow tells. Still to do from GAME_DESIGN.md: counter-throw and the stage-hazard climb)
+- [x] Boss arena (1-4) build, with an approach corridor and camera lock to the arena
+- [x] Mid-level checkpoints in 1-2, 1-3 and 1-4 (respawn at the last one reached; health refill unchanged)
+- [ ] Boss music (placeholder: the procedural loop plays faster and lower on `king_saurus` levels; real `.ogg` still pending)
 - [ ] Title screen art
 - [ ] World map art
 - [ ] Pause menu finalized

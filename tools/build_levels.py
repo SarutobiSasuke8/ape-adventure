@@ -20,6 +20,8 @@ TMX authoring contract (kept in sync with the loader):
     given row) and a "length" property gives the rope length in px.
   * A goal totem with "requires_boss" = "true" stays hidden until the boss
     is defeated (boss arenas).
+  * A "checkpoint" is a respawn post. Touching it moves later respawns there.
+  * "king_saurus" carries "arena_left" / "arena_right" in px (see loader).
 """
 from __future__ import annotations
 
@@ -265,6 +267,7 @@ def spec_1_2() -> LevelSpec:
     )
 
     spawns += [vine(18), vine(42), vine(66), vine(72), vine(98)]
+    spawns.append(Spawn("checkpoint", 60, GROUND))   # mid-level, before gap C
 
     spawns += [
         Spawn("snapper", 8, GROUND),       # warm-up, same as 1-1
@@ -341,6 +344,8 @@ def spec_1_3() -> LevelSpec:
         (12, 116, 121),  # letter E perch
     )
 
+    spawns.append(Spawn("checkpoint", 64, GROUND))   # mid-level, after the second pit
+
     spawns += [
         Spawn("snapper", 25, GROUND),     # open-ground roll practice
         Spawn("snapper", 43, TUNNEL),     # inside log 2
@@ -390,28 +395,47 @@ def spec_1_3() -> LevelSpec:
 # ---------------------------------------------------------------------------
 # Level 1-4, "The Saurian's Arena": King Saurus, World 1 boss.
 #
-# One screen. Two-tile ledges at each end are the safe spots: King Saurus
-# (56 px tall) charges, crashes into a ledge face and is dazed. Stomp him
-# while he is dazed. Three stomps, each phase faster (phase 2+ adds a hop).
-# The goal totem only appears once he is beaten. Combines stomp (1-1) with
-# reading and timing an attack pattern.
+# A short raised approach corridor (one Snapper, a checkpoint at the arena
+# gate) leads onto the left safe ledge of a one-screen arena. The camera
+# locks to the arena while Bongo is in it. Two-tile ledges at each end are
+# the safe spots: King Saurus (56 px tall) charges, crashes into a ledge face
+# and is dazed. Stomp him while he is dazed. Three stomps, each phase faster
+# (phase 2+ adds a hop). After the second stomp he opens every cycle with a
+# roar that drops coconuts; each shows a ground shadow before it falls.
+# The goal totem only appears once he is beaten.
 # ---------------------------------------------------------------------------
 
+ARENA_COL = 14        # first column of the arena (the corridor is cols 1-13)
+ARENA_COLS = 30       # exactly one screen wide
+
+
 def spec_1_4() -> LevelSpec:
-    COLS, ROWS = 30, 18
+    A = ARENA_COL
+    COLS, ROWS = A + ARENA_COLS, 18
     GROUND = 16
-    spawns: list[Spawn] = [Spawn("spawn", 2, 14)]
+    LEDGE = 14            # corridor and left ledge surface row
+    STUMP = A - 3
+    spawns: list[Spawn] = [Spawn("spawn", 2, LEDGE)]
 
     solids = (
-        (0, 0, 1, ROWS),          # left arena wall
-        (COLS - 1, 0, 1, ROWS),   # right arena wall
-        (1, 14, 3, 2),            # left safe ledge
-        (COLS - 4, 14, 3, 2),     # right safe ledge
+        (0, 0, 1, ROWS),              # left world wall
+        (1, LEDGE, A + 3, 4),         # corridor floor, running onto the left safe ledge
+        (STUMP, LEDGE - 1, 1, 1),     # stump: keeps the corridor Snapper off the ledge
+        (COLS - 1, 0, 1, ROWS),       # right arena wall
+        (COLS - 4, LEDGE, 3, 2),      # right safe ledge
     )
 
-    spawns.append(Spawn("king_saurus", 18, GROUND))
-    spawns += [Spawn("banana", c + 0.5, 13) for c in (1, 2, 3, COLS - 4, COLS - 3, COLS - 2)]
-    spawns.append(Spawn("goal_totem", COLS // 2 - 1, GROUND, {"requires_boss": "true"}))
+    # Approach corridor
+    spawns += banana_arc(4, STUMP, LEDGE - 1)
+    spawns.append(Spawn("banana", STUMP + 0.5, LEDGE - 2))  # on the stump
+    spawns.append(Spawn("snapper", 8, LEDGE))
+    spawns.append(Spawn("checkpoint", A - 2, LEDGE))   # arena gate
+
+    spawns.append(Spawn("king_saurus", A + 18, GROUND, {
+        "arena_left": str(A * TS), "arena_right": str(COLS * TS),
+    }))
+    spawns += [Spawn("banana", c + 0.5, 13) for c in (A + 1, A + 2, A + 3, COLS - 4, COLS - 3, COLS - 2)]
+    spawns.append(Spawn("goal_totem", A + ARENA_COLS // 2 - 1, GROUND, {"requires_boss": "true"}))
 
     return LevelSpec(
         level_id="1-4",
